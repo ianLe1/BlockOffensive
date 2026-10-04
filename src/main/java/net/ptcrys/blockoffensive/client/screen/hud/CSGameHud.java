@@ -1,11 +1,11 @@
 package net.ptcrys.blockoffensive.client.screen.hud;
 
+import net.minecraft.client.DeltaTracker;
 import net.ptcrys.blockoffensive.BOConfig;
 import net.ptcrys.blockoffensive.client.data.CSClientData;
 import net.ptcrys.blockoffensive.client.screen.hud.animation.EnderKillAnimator;
 import net.ptcrys.blockoffensive.client.screen.hud.animation.KillAnimator;
 import net.ptcrys.blockoffensive.compat.BOImpl;
-import net.ptcrys.blockoffensive.compat.HitIndicationCompat;
 import net.ptcrys.blockoffensive.data.DeathMessage;
 import net.ptcrys.fpsmatch.common.attributes.ammo.BulletproofArmorAttribute;
 import net.ptcrys.fpsmatch.common.client.FPSMClient;
@@ -26,10 +26,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.ForgeGui;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.fml.ModList;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.tacz.guns.api.TimelessAPI;
@@ -181,7 +180,9 @@ public class CSGameHud implements IHudRenderer {
     }
 
     @Override
-    public void onSpectatorRender(ForgeGui gui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
+    public void onSpectatorRender(GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
+        int screenWidth = guiGraphics.guiWidth();
+        int screenHeight = guiGraphics.guiHeight();
         syncSpectatorMode(true);
         CSHudSafeAreaLayouts.HudGeometry geometry = beginFrameGeometry(screenWidth, screenHeight, true);
         if (!FPSMClient.getGlobalData().isCurrentGameType("csdm")) {
@@ -203,13 +204,12 @@ public class CSGameHud implements IHudRenderer {
     }
 
     @Override
-    public void onPlayerRender(ForgeGui gui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
+    public void onPlayerRender(GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
+        int screenWidth = guiGraphics.guiWidth();
+        int screenHeight = guiGraphics.guiHeight();
         syncSpectatorMode(false);
         Minecraft mc = Minecraft.getInstance();
         CSHudSafeAreaLayouts.HudGeometry geometry = beginFrameGeometry(screenWidth, screenHeight, false);
-        if (BOImpl.isHitIndicationLoaded()) {
-            HitIndicationCompat.Renderer.render(gui.getMinecraft().getWindow(), guiGraphics);
-        }
         if (!FPSMClient.getGlobalData().isCurrentGameType("csdm")) {
             gameOverlay.render(
                     guiGraphics,
@@ -222,8 +222,8 @@ public class CSGameHud implements IHudRenderer {
         }
         deathMessageHud.render(guiGraphics);
         CSHudSafeAreaLayouts.BottomHudLayout bottomHud = geometry.bottomHud().orElseThrow();
-        renderInfoLine(mc, gui, guiGraphics, bottomHud.combatInfo());
-        renderItemBar(mc, gui, guiGraphics, bottomHud.itemBar());
+        renderInfoLine(mc, guiGraphics, bottomHud.combatInfo());
+        renderItemBar(mc, guiGraphics, bottomHud.itemBar());
         mvpHud.render(guiGraphics, screenWidth, screenHeight);
         PingScreenMarker.render(guiGraphics, screenWidth, screenHeight);
         geometry.topStatus().vote().ifPresent(rect -> CSVoteHud.getInstance().render(guiGraphics, rect));
@@ -231,7 +231,6 @@ public class CSGameHud implements IHudRenderer {
 
     public void renderInfoLine(
                                Minecraft mc,
-                               ForgeGui gui,
                                GuiGraphics guiGraphics,
                                CSHudSafeAreaLayouts.CombatInfoLayout layout) {
         int lineWidth = layout.lineWidth();
@@ -251,19 +250,19 @@ public class CSGameHud implements IHudRenderer {
             guiGraphics.fill(centerX + x, y, centerX + x + 1, y + lineHeight, color);
         }
 
-        renderHealthBar(mc, gui, guiGraphics, centerX, lineWidth, y);
+        renderHealthBar(mc, guiGraphics, centerX, lineWidth, y);
         if (mc.player != null) {
             Inventory inv = mc.player.getInventory();
             ItemStack selectItem = mc.player.getInventory().getItem(inv.selected);
             if (GunCompatManager.isGun(selectItem)) {
-                renderGunInfo(mc, gui, guiGraphics, selectItem, centerX, lineWidth, y);
+                renderGunInfo(mc, guiGraphics, selectItem, centerX, lineWidth, y);
             }
         }
 
-        renderCombatKillTips(mc, gui, guiGraphics, centerX, y);
+        renderCombatKillTips(mc, guiGraphics, centerX, y);
     }
 
-    public void renderHealthBar(Minecraft mc, ForgeGui gui, GuiGraphics guiGraphics, int centerX, int lineWidth, int y) {
+    public void renderHealthBar(Minecraft mc, GuiGraphics guiGraphics, int centerX, int lineWidth, int y) {
         LocalPlayer player = mc.player;
         if (player != null) {
             int health = (int) player.getHealth();
@@ -281,7 +280,7 @@ public class CSGameHud implements IHudRenderer {
             int healthBarHeight = 3;
             int healthBarFillWidth = (int) (healthPercent * tempWidth);
 
-            renderArmorBar(mc, gui, guiGraphics, healthTextX, healthTextY);
+            renderArmorBar(mc, guiGraphics, healthTextX, healthTextY);
 
             guiGraphics.pose().pushPose();
             guiGraphics.pose().translate(healthTextX + (float) tempWidth / 2 - (float) font.width(healthText), healthTextY, 0);
@@ -295,7 +294,7 @@ public class CSGameHud implements IHudRenderer {
         }
     }
 
-    public void renderArmorBar(Minecraft mc, ForgeGui gui, GuiGraphics guiGraphics, int healthTextX, int healthTextY) {
+    public void renderArmorBar(Minecraft mc, GuiGraphics guiGraphics, int healthTextX, int healthTextY) {
         if (BulletproofArmorAttribute.Client.bpAttributeDurability == 0) return;
         Font font = mc.font;
         String text = String.valueOf(BulletproofArmorAttribute.Client.bpAttributeDurability);
@@ -307,7 +306,7 @@ public class CSGameHud implements IHudRenderer {
         guiGraphics.pose().popPose();
     }
 
-    private void renderGunInfo(Minecraft mc, ForgeGui gui, GuiGraphics guiGraphics, ItemStack stack, int centerX, int lineWidth, int y) {
+    private void renderGunInfo(Minecraft mc, GuiGraphics guiGraphics, ItemStack stack, int centerX, int lineWidth, int y) {
         if (!ModList.get().isLoaded("tacz")) return;
         com.tacz.guns.api.item.IGun iGun = (com.tacz.guns.api.item.IGun) stack.getItem();
         ResourceLocation var27 = iGun.getGunId(stack);
@@ -398,7 +397,6 @@ public class CSGameHud implements IHudRenderer {
 
     public void renderItemBar(
                               Minecraft mc,
-                              ForgeGui gui,
                               GuiGraphics guiGraphics,
                               CSHudSafeAreaLayouts.ItemBarLayout layout) {
         if (mc.player == null) return;
@@ -533,14 +531,14 @@ public class CSGameHud implements IHudRenderer {
         }
     }
 
-    public void renderCombatKillTips(Minecraft mc, ForgeGui gui, GuiGraphics guiGraphics, int centerX, int y) {
+    public void renderCombatKillTips(Minecraft mc, GuiGraphics guiGraphics, int centerX, int y) {
         if (!BOConfig.client.killIconHudEnabled.get()) return;
-        killAnimator.render(mc, gui, guiGraphics, centerX, y);
+        killAnimator.render(mc, guiGraphics, centerX, y);
     }
 
     @Override
-    public void onRenderGuiOverlayPre(RenderGuiOverlayEvent.Pre event) {
-        if (event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type() || event.getOverlay() == VanillaGuiOverlay.ARMOR_LEVEL.type() || event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type() || event.getOverlay() == VanillaGuiOverlay.HOTBAR.type() || event.getOverlay() == VanillaGuiOverlay.EXPERIENCE_BAR.type() || event.getOverlay() == VanillaGuiOverlay.MOUNT_HEALTH.type() || event.getOverlay().id().getPath().equals("tac_gun_hud_overlay")) {
+    public void onRenderGuiLayerPre(RenderGuiLayerEvent.Pre event) {
+        if (event.getName().equals(VanillaGuiLayers.PLAYER_HEALTH) || event.getName().equals(VanillaGuiLayers.ARMOR_LEVEL) || event.getName().equals(VanillaGuiLayers.FOOD_LEVEL) || event.getName().equals(VanillaGuiLayers.HOTBAR) || event.getName().equals(VanillaGuiLayers.EXPERIENCE_BAR) || event.getName().equals(VanillaGuiLayers.VEHICLE_HEALTH) || event.getName().getPath().equals("tac_gun_hud_overlay")) {
             event.setCanceled(true);
         }
     }

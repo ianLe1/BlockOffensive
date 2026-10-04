@@ -7,19 +7,19 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 public class BOItemRegister {
 
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, BlockOffensive.MODID);
-    public static RegistryObject<CreativeModeTab> BO_TAB;
+    public static DeferredHolder<CreativeModeTab, CreativeModeTab> BO_TAB;
 
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, BlockOffensive.MODID);
-    public static final RegistryObject<Item> C4 = ITEMS.register("c4", () -> new CompositionC4(new Item.Properties()));
-    public static final RegistryObject<Item> OPEN_TEST_SHOP = ITEMS.register("open_test_shop", () -> new TestItem(new Item.Properties()));
-    public static final RegistryObject<BombDisposalKit> BOMB_DISPOSAL_KIT = ITEMS.register("bomb_disposal_kit",
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, BlockOffensive.MODID);
+    public static final DeferredHolder<Item, Item> C4 = ITEMS.register("c4", () -> new CompositionC4(new Item.Properties()));
+    public static final DeferredHolder<Item, Item> OPEN_TEST_SHOP = ITEMS.register("open_test_shop", () -> new TestItem(new Item.Properties()));
+    public static final DeferredHolder<Item, BombDisposalKit> BOMB_DISPOSAL_KIT = ITEMS.register("bomb_disposal_kit",
             () -> new BombDisposalKit(new Item.Properties()));
 
     static {

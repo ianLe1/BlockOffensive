@@ -1,5 +1,7 @@
 package net.ptcrys.blockoffensive.item;
 
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.util.TriState;
 import net.ptcrys.blockoffensive.entity.CompositionC4Entity;
 import net.ptcrys.blockoffensive.event.CSGameMapEvent;
 import net.ptcrys.blockoffensive.map.CSGameMap;
@@ -35,12 +37,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +51,7 @@ import org.joml.Vector3f;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-@Mod.EventBusSubscriber(modid = "blockoffensive", bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = "blockoffensive", bus = EventBusSubscriber.Bus.GAME)
 public class CompositionC4 extends Item implements BlastBombItem {
 
     @SubscribeEvent
@@ -58,8 +60,8 @@ public class CompositionC4 extends Item implements BlastBombItem {
         ItemStack stack = player.getItemInHand(event.getHand());
 
         if (stack.getItem() instanceof CompositionC4) {
-            event.setUseItem(Event.Result.ALLOW);
-            event.setUseBlock(Event.Result.DENY);
+            event.setUseItem(TriState.TRUE);
+            event.setUseBlock(TriState.FALSE);
         }
     }
 
@@ -71,19 +73,10 @@ public class CompositionC4 extends Item implements BlastBombItem {
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
 
-            private static final HumanoidModel.ArmPose ITEM_C4 = HumanoidModel.ArmPose.create("ITEM_C4", true, (model, entity, arm) -> {
-                float rotationAngle = (float) Math.toRadians(30);  // 将角度设置为 30 度（可以根据需要调整）
-                // 右臂旋转
-                if (arm == HumanoidArm.RIGHT) {
-                    model.rightArm.xRot = -rotationAngle;  // 右臂旋转向中间
-                    model.rightArm.yRot = -rotationAngle; // 右臂绕 Y 轴旋转
-                }
-                // 左臂旋转
-                else {
-                    model.leftArm.xRot = -rotationAngle;  // 左臂旋转向中间
-                    model.leftArm.yRot = rotationAngle;   // 左臂绕 Y 轴旋转（相反方向）
-                }
-            });
+            // 1.21.1：HumanoidModel.ArmPose 成了 final enum（IExtensibleEnum），
+            // ArmPose.create(...) 被删；自定义姿势要走 NeoForge 枚举扩展（enumextensions.json
+            // + EnumProxy）。本移植版退化为 BLOCK（双手持物近似姿势），见 PORT-NOTES.md。
+            private static final HumanoidModel.ArmPose ITEM_C4 = HumanoidModel.ArmPose.BLOCK;
 
             @Override
             public HumanoidModel.ArmPose getArmPose(LivingEntity entityLiving, InteractionHand hand, ItemStack itemStack) {
@@ -156,7 +149,7 @@ public class CompositionC4 extends Item implements BlastBombItem {
         if (canPlace && inBombArea) {
             player.startUsingItem(hand);
             playClickSound(level, player, team);
-            team.sendMessage(BOUtil.buildTeamChatMessage(player, team, Component.translatable("blockoffensive.place.message.c4"), Component.empty(), TextColor.parseColor(team.name.equals("ct") ? "#96C8FA" : "#EAC055")));
+            team.sendMessage(BOUtil.buildTeamChatMessage(player, team, Component.translatable("blockoffensive.place.message.c4"), Component.empty(), TextColor.parseColor(team.name.equals("ct") ? "#96C8FA" : "#EAC055").result().orElseThrow()));
             return InteractionResultHolder.consume(stack);
         }
 
@@ -205,14 +198,20 @@ public class CompositionC4 extends Item implements BlastBombItem {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !entity.getUUID().equals(mc.player.getUUID())) return;
         // 禁用移动控制
-        disableMovementKeys(mc);
+        disableMovementKeys();
 
         if (remainingTicks != 80 && remainingTicks % 8 == 0) {
             level.playLocalSound(entity.getX(), entity.getY(), entity.getZ(), BOSoundRegister.CLICK.get(), SoundSource.PLAYERS, 3.0F, 1.0F, false);
         }
     }
 
-    private void disableMovementKeys(Minecraft mc) {
+    // 1.21.1: 签名里不能出现客户端类。本类带 @EventBusSubscriber，AutomaticEventSubscriber
+    // 会对它调 Class#getDeclaredMethods()（会解析每个声明方法的描述符），而 RuntimeDistCleaner
+    // 在 DEDICATED_SERVER 下拒绝加载 net.minecraft.client.Minecraft ⇒ "Attempted to load class
+    // net/minecraft/client/Minecraft for invalid dist"。方法体里用 Minecraft 是安全的，
+    // 只有签名不行，所以这里把参数去掉、改成方法体内取实例。
+    private void disableMovementKeys() {
+        Minecraft mc = Minecraft.getInstance();
         mc.options.keyUp.setDown(false);
         mc.options.keyLeft.setDown(false);
         mc.options.keyDown.setDown(false);
@@ -265,7 +264,7 @@ public class CompositionC4 extends Item implements BlastBombItem {
         baseMap.getMapTeams().getJoinedPlayers().forEach(data -> data.getPlayer().ifPresent(p -> p.displayClientMessage(message, false)));
 
         map.getMapTeams().getTeamByPlayer(player).ifPresent(team -> {
-            MinecraftForge.EVENT_BUS.post(new CSGameMapEvent.PlayerEvent.PlacedC4Event(map, team, player, c4));
+            NeoForge.EVENT_BUS.post(new CSGameMapEvent.PlayerEvent.PlacedC4Event(map, team, player, c4));
         });
 
         return ItemStack.EMPTY;
@@ -277,7 +276,7 @@ public class CompositionC4 extends Item implements BlastBombItem {
     }
 
     @Override
-    public int getUseDuration(@NotNull ItemStack stack) {
+    public int getUseDuration(@NotNull ItemStack stack, @NotNull LivingEntity entity) {
         return 80;
     }
 }

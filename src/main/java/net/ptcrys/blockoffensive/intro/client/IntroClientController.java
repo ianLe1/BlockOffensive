@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.intro.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.intro.IntroCameraProfile;
 import net.ptcrys.blockoffensive.intro.IntroDisplayWeaponResolver;
@@ -30,11 +31,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = BlockOffensive.MODID, value = net.minecraftforge.api.distmarker.Dist.CLIENT)
+@net.neoforged.fml.common.EventBusSubscriber(modid = BlockOffensive.MODID, value = net.neoforged.api.distmarker.Dist.CLIENT)
 public final class IntroClientController {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -86,7 +87,7 @@ public final class IntroClientController {
             boolean cameraReady = prepareCamera(minecraft, packet);
             LOGGER.info("[BlockOffensive Halftime] Client prearmed cinematic cover {} map={}:{} preRollTicks={}",
                     packet.sequenceId, packet.gameType, packet.mapName, packet.preRollTicks);
-            BlockOffensive.INSTANCE.sendToServer(new IntroClientDoneC2SPacket(packet.sequenceId, cameraReady ? "prearm-camera-ready" : "prearm-active"));
+            NetworkPacketRegister.sendToServer(new IntroClientDoneC2SPacket(packet.sequenceId, cameraReady ? "prearm-camera-ready" : "prearm-active"));
             return;
         }
         if (packet.phase == IntroPhase.PREVIEW5) {
@@ -117,7 +118,7 @@ public final class IntroClientController {
                 bendConsumed, IntroDisplayWeaponResolver.RULE_ID,
                 packet.cameraStart, packet.cameraEnd);
         if (cameraReady) {
-            BlockOffensive.INSTANCE.sendToServer(new IntroClientDoneC2SPacket(packet.sequenceId, "camera-ready"));
+            NetworkPacketRegister.sendToServer(new IntroClientDoneC2SPacket(packet.sequenceId, "camera-ready"));
         }
     }
 
@@ -143,8 +144,8 @@ public final class IntroClientController {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || active == null || Minecraft.getInstance().isPaused()) {
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (active == null || Minecraft.getInstance().isPaused()) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -243,7 +244,7 @@ public final class IntroClientController {
             previous.cameraSession.close();
         }
         if (sendDone && previous != null) {
-            BlockOffensive.INSTANCE.sendToServer(new IntroClientDoneC2SPacket(previous.packet.sequenceId, "client-timeout"));
+            NetworkPacketRegister.sendToServer(new IntroClientDoneC2SPacket(previous.packet.sequenceId, "client-timeout"));
         }
     }
 
@@ -342,7 +343,7 @@ public final class IntroClientController {
             listedPlayers.add(info);
 
             RemotePlayer player = new RemotePlayer(level, profile);
-            level.addPlayer(PREVIEW_ENTITY_ID_BASE - i, player);
+            level.addEntity(player); // 1.21.1：ClientLevel.addPlayer(id, player) 已删，改 addEntity（id 由 level 分配）
             player.noPhysics = true;
             player.setNoGravity(true);
             player.setSilent(true);

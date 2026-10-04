@@ -11,7 +11,7 @@ import net.ptcrys.fpsmatch.core.team.ServerTeam;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -28,8 +28,8 @@ public record ShopDropPickupC2SPacket(UUID requestId, UUID entityId) {
         return new ShopDropPickupC2SPacket(buffer.readUUID(), buffer.readUUID());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public void handle(Supplier<PayloadContext> contextSupplier) {
+        PayloadContext context = contextSupplier.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player == null || !ShopDropPickupService.acceptRequest(player, requestId())) {

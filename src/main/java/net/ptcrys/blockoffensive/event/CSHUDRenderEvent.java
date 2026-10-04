@@ -4,7 +4,7 @@ import net.ptcrys.blockoffensive.client.screen.hud.CSMvpHud;
 import net.ptcrys.blockoffensive.data.MvpReason;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 public class CSHUDRenderEvent extends Event {
 

@@ -18,8 +18,7 @@ public class TestItem extends Item {
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(Level pLevel, @NotNull Player pPlayer, @NotNull InteractionHand pUsedHand) {
         if (pLevel.isClientSide) {
-            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
-                    () -> ClientAccess::openShop);
+            ClientAccess.openShop();
         }
         return super.use(pLevel, pPlayer, pUsedHand);
     }

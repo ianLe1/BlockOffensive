@@ -1,5 +1,8 @@
 package net.ptcrys.blockoffensive.command;
 
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.data.DeathMessage;
 import net.ptcrys.blockoffensive.map.CSDeathMatchMap;
@@ -32,14 +35,12 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -59,7 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BlockOffensive.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class BOTaczLiveFireDebugCommand {
 
     private static final String TEST_MAP_PREFIX = "__bo_tacz_live_fire_";
@@ -139,8 +140,8 @@ public final class BOTaczLiveFireDebugCommand {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || RUNS.isEmpty()) {
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (RUNS.isEmpty()) {
             return;
         }
 
@@ -164,7 +165,7 @@ public final class BOTaczLiveFireDebugCommand {
     }
 
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(LivingIncomingDamageEvent event) {
         RUNS.values().forEach(run -> run.onLivingHurt(event));
     }
 
@@ -373,13 +374,13 @@ public final class BOTaczLiveFireDebugCommand {
                     event.getBullet() == null ? "null" : event.getBullet().getType().toString());
         }
 
-        private void onLivingHurt(LivingHurtEvent event) {
+        private void onLivingHurt(LivingIncomingDamageEvent event) {
             if (!event.getEntity().getUUID().equals(victim.getUUID())) {
                 return;
             }
             Entity attacker = event.getSource().getEntity();
             Entity direct = event.getSource().getDirectEntity();
-            FPSMatch.LOGGER.info("[BO_TACZ_TEST] LivingHurtEvent amount={} canceled={} source={} attacker={} direct={} victimHealthBefore={}",
+            FPSMatch.LOGGER.info("[BO_TACZ_TEST] LivingIncomingDamageEvent amount={} canceled={} source={} attacker={} direct={} victimHealthBefore={}",
                     event.getAmount(),
                     event.isCanceled(),
                     event.getSource().getMsgId(),
@@ -505,7 +506,7 @@ public final class BOTaczLiveFireDebugCommand {
                     .setAmmoCount(5)
                     .setAmmoInBarrel(true)
                     .setFireMode(FireMode.SEMI)
-                    .forceBuild();
+                    .forceBuild(level.registryAccess());
             shooter.setGameMode(GameType.ADVENTURE);
             shooter.setItemInHand(InteractionHand.MAIN_HAND, gun);
             shooter.getInventory().setChanged();

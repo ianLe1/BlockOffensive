@@ -8,7 +8,7 @@ import net.ptcrys.fpsmatch.core.team.MapTeams;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -34,8 +34,8 @@ public class SwitchSpectateC2SPacket {
         return new SwitchSpectateC2SPacket(buf.readEnum(SwitchDirection.class));
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
+    public void handle(Supplier<PayloadContext> ctxSup) {
+        PayloadContext ctx = ctxSup.get();
         ctx.enqueueWork(() -> {
             ServerPlayer sp = ctx.getSender();
             if (sp == null || !sp.isSpectator()) return;

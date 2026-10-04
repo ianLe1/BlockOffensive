@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.client.shop;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.net.shop.ShopDropPickupC2SPacket;
 import net.ptcrys.blockoffensive.net.shop.ShopDropPickupResultS2CPacket;
 import net.ptcrys.blockoffensive.net.shop.ShopNearbyDropsRequestC2SPacket;
@@ -7,10 +8,10 @@ import net.ptcrys.blockoffensive.net.shop.ShopNearbyDropsS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Client cache only; it never mutates world entities or inventory. */
-@Mod.EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class ShopDropClientState {
 
     private static final List<ShopNearbyDropsS2CPacket.Drop> DROPS = new CopyOnWriteArrayList<>();
@@ -77,13 +78,11 @@ public final class ShopDropClientState {
     }
 
     public static void requestRefresh() {
-        NetworkPacketRegister.getChannelFromCache(ShopNearbyDropsRequestC2SPacket.class)
-                .sendToServer(new ShopNearbyDropsRequestC2SPacket(NEXT_LIST_REQUEST.incrementAndGet()));
+        NetworkPacketRegister.sendToServer(new ShopNearbyDropsRequestC2SPacket(NEXT_LIST_REQUEST.incrementAndGet()));
     }
 
     public static void requestPickup(UUID entityId) {
         if (entityId == null) return;
-        NetworkPacketRegister.getChannelFromCache(ShopDropPickupC2SPacket.class)
-                .sendToServer(new ShopDropPickupC2SPacket(UUID.randomUUID(), entityId));
+        NetworkPacketRegister.sendToServer(new ShopDropPickupC2SPacket(UUID.randomUUID(), entityId));
     }
 }

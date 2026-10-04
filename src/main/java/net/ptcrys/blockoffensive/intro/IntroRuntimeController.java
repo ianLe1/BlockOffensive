@@ -1,5 +1,9 @@
 package net.ptcrys.blockoffensive.intro;
 
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.util.TriState;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.intro.net.IntroClientDoneC2SPacket;
 import net.ptcrys.blockoffensive.intro.net.IntroSequenceS2CPacket;
@@ -12,19 +16,17 @@ import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.AttackEntityEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.LogicalSide;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.mojang.logging.LogUtils;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -40,7 +42,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BlockOffensive.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class IntroRuntimeController {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -148,7 +150,7 @@ public final class IntroRuntimeController {
         IntroSequence preview = sequence.get();
         UUID sequenceId = UUID.randomUUID();
         IntroSequence prearm = toPrearmSequence(preview);
-        BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> viewer), new IntroSequenceS2CPacket(sequenceId, prearm).startingAt(viewer.serverLevel().getGameTime()));
+        NetworkPacketRegister.sendToPlayer(viewer, new IntroSequenceS2CPacket(sequenceId, prearm).startingAt(viewer.serverLevel().getGameTime()));
         UUID viewerId = viewer.getUUID();
         MinecraftServer server = viewer.getServer();
         DELAYED_ACTIONS.add(new DelayedMapAction(map, preview.preRollTicks(), () -> {
@@ -158,7 +160,7 @@ public final class IntroRuntimeController {
                 return false;
             }
             IntroDisplayWeaponResolver.Result displayWeapons = IntroDisplayWeaponResolver.items(preview);
-            BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> currentViewer), new IntroSequenceS2CPacket(sequenceId, preview, displayWeapons.items()).startingAt(currentViewer.serverLevel().getGameTime()));
+            NetworkPacketRegister.sendToPlayer(currentViewer, new IntroSequenceS2CPacket(sequenceId, preview, displayWeapons.items()).startingAt(currentViewer.serverLevel().getGameTime()));
             LOGGER.info("[BlockOffensive Halftime] Started preview5 {}:{} {} for {} with {} actors item={} introDisplayWeaponRule={} displayWeaponIds={} visualItems={} displayWeaponFallbacks={} after preRollTicks={}",
                     preview.gameType(), preview.mapName(), preview.side().id(), currentViewer.getGameProfile().getName(),
                     preview.players().size(), preview.safePreviewItemId(), IntroDisplayWeaponResolver.RULE_ID, displayWeapons.itemIds(),
@@ -217,7 +219,7 @@ public final class IntroRuntimeController {
     private static void broadcast(RunningSequence running) {
         IntroSequenceS2CPacket packet = new IntroSequenceS2CPacket(running.id, running.sequence, running.visualHeldItems).startingAt(running.startGameTime);
         for (PlayerState state : running.players) {
-            BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> state.player), packet);
+            NetworkPacketRegister.sendToPlayer(state.player, packet);
         }
     }
 
@@ -240,10 +242,8 @@ public final class IntroRuntimeController {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.side != LogicalSide.SERVER) {
-            return;
-        }
+    public static void onServerTick(ServerTickEvent.Post event) {
+        // 1.21.1：TickEvent 拆成 .Pre/.Post 后不再带 side；ServerTickEvent 本来就只在服务端发。
         if (!ACTIVE.isEmpty()) {
             Iterator<RunningSequence> iterator = ACTIVE.values().iterator();
             while (iterator.hasNext()) {
@@ -302,7 +302,7 @@ public final class IntroRuntimeController {
         IntroSequence prearm = toPrearmSequence(sequence);
         IntroSequenceS2CPacket packet = new IntroSequenceS2CPacket(UUID.randomUUID(), prearm).startingAt(level.getGameTime());
         for (ServerPlayer player : players) {
-            BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
+            NetworkPacketRegister.sendToPlayer(player, packet);
         }
         return players.size();
     }
@@ -455,7 +455,7 @@ public final class IntroRuntimeController {
                     running.sequence.cameraEndYaw(),
                     running.sequence.cameraEndPitch(),
                     List.of());
-            BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> state.player), new IntroSequenceS2CPacket(running.id, stop));
+            NetworkPacketRegister.sendToPlayer(state.player, new IntroSequenceS2CPacket(running.id, stop));
         }
     }
 
@@ -490,14 +490,14 @@ public final class IntroRuntimeController {
     }
 
     @SubscribeEvent
-    public static void onLivingAttack(LivingAttackEvent event) {
+    public static void onLivingAttack(LivingIncomingDamageEvent event) {
         if (isLocked(event.getEntity()) || isLocked(event.getSource().getEntity())) {
             event.setCanceled(true);
         }
     }
 
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(LivingIncomingDamageEvent event) {
         if (isLocked(event.getEntity()) || isLocked(event.getSource().getEntity())) {
             event.setCanceled(true);
         }
@@ -510,9 +510,33 @@ public final class IntroRuntimeController {
         }
     }
 
+    // 1.21.1 规则 7：NeoForge 拒绝为**抽象**事件类注册监听器 ——
+    //   java.lang.IllegalArgumentException: Cannot register listeners for abstract class
+    //   net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.
+    //   Register a listener to one of its subclasses instead!
+    // 所以原来「一个 onInteract(PlayerInteractEvent) + instanceof 分派」必须拆成三个具体子类方法
+    // （1.20.1 Forge 允许基类参数，NeoForge 不允许）。语义与原来的分派完全一致。
     @SubscribeEvent
-    public static void onInteract(PlayerInteractEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && PLAYER_TO_SEQUENCE.containsKey(player.getUUID())) {
+    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        if (!isLocked(event.getEntity())) {
+            return;
+        }
+        event.setUseBlock(TriState.FALSE);
+        event.setUseItem(TriState.FALSE);
+    }
+
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (!isLocked(event.getEntity())) {
+            return;
+        }
+        event.setUseBlock(TriState.FALSE);
+        event.setUseItem(TriState.FALSE);
+    }
+
+    @SubscribeEvent
+    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (isLocked(event.getEntity())) {
             event.setCanceled(true);
         }
     }

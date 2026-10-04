@@ -1,7 +1,7 @@
 package net.ptcrys.blockoffensive.net.ping;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -37,8 +37,8 @@ public class PingS2CPacket {
         return new PingS2CPacket(buf.readUtf(64), buf.readVarInt(), buf.readDouble(), buf.readDouble(), buf.readDouble());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
+    public void handle(Supplier<PayloadContext> ctxSup) {
+        PayloadContext ctx = ctxSup.get();
         ctx.enqueueWork(() -> {
             com.mojang.logging.LogUtils.getLogger().info("[PingS2C] sender={} type={} pos=({},{},{})",
                     senderName, type,

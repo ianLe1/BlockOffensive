@@ -3,7 +3,7 @@ package net.ptcrys.blockoffensive.net;
 import net.ptcrys.blockoffensive.client.data.CSClientData;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -35,7 +35,7 @@ public final class CSScoreboardS2CPacket {
         return new CSScoreboardS2CPacket(b.readUtf(128), b.readVarIntArray(64), b.readInt(), b.readInt(), b.readInt(), b.readInt());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> c) {
+    public void handle(Supplier<PayloadContext> c) {
         c.get().enqueueWork(() -> {
             CSClientData.scoreboardRounds = rounds.clone();
             CSClientData.scoreboardHalfRounds = Math.max(1, halfRounds);

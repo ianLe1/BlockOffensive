@@ -4,7 +4,7 @@ import net.ptcrys.blockoffensive.data.MvpReason;
 import net.ptcrys.fpsmatch.core.map.BaseMap;
 
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 public class CSGamePlayerGetMvpEvent extends Event {
 

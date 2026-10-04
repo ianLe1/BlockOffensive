@@ -131,7 +131,7 @@ public class CSDMTabRenderer extends CSGameTabRenderer {
         currentX += COL_PING;
 
         // 头像
-        PlayerFaceRenderer.draw(guiGraphics, player.getSkinLocation(), currentX, y, AVATAR_SIZE);
+        PlayerFaceRenderer.draw(guiGraphics, player.getSkin().texture(), currentX, y, AVATAR_SIZE);
         currentX += AVATAR_SIZE + COL_PADDING;
 
         // 玩家名（左对齐）

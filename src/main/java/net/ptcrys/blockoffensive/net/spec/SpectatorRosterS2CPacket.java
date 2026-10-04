@@ -3,9 +3,9 @@ package net.ptcrys.blockoffensive.net.spec;
 import net.ptcrys.blockoffensive.client.screen.hud.CSSpectatorRoster;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.ptcrys.blockoffensive.net.ClientPacketExecutor;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +24,7 @@ public record SpectatorRosterS2CPacket(List<String> names) {
         return new SpectatorRosterS2CPacket(buf.readCollection(ArrayList::new, b -> b.readUtf(64)));
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> CSSpectatorRoster.getInstance().accept(this)));
-        ctx.get().setPacketHandled(true);
+    public void handle(Supplier<PayloadContext> ctx) {
+        ClientPacketExecutor.execute(ctx, this);
     }
 }

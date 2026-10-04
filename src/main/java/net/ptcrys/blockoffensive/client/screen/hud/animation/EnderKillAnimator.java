@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraftforge.client.gui.overlay.ForgeGui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
@@ -72,7 +71,7 @@ public class EnderKillAnimator implements KillAnimator {
     }
 
     @Override
-    public void render(Minecraft mc, ForgeGui gui, GuiGraphics guiGraphics, int centerX, int baseY) {
+    public void render(Minecraft mc, GuiGraphics guiGraphics, int centerX, int baseY) {
         if (!isActive()) return;
 
         final int renderY = baseY - 75;

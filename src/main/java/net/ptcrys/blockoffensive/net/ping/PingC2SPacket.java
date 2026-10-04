@@ -6,7 +6,7 @@ import net.ptcrys.fpsmatch.core.map.BaseMap;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -48,8 +48,8 @@ public class PingC2SPacket {
         return new PingC2SPacket(buf.readVarInt(), buf.readDouble(), buf.readDouble(), buf.readDouble());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
+    public void handle(Supplier<PayloadContext> ctxSup) {
+        PayloadContext ctx = ctxSup.get();
         ctx.enqueueWork(() -> {
             ServerPlayer sp = ctx.getSender();
             if (sp == null) return;

@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.net;
 
+import net.minecraft.network.chat.ComponentSerialization;
 import net.ptcrys.blockoffensive.client.screen.hud.CSGameHud;
 import net.ptcrys.blockoffensive.data.DeathMessage;
 
@@ -8,7 +9,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -26,18 +27,18 @@ public class DeathMessageS2CPacket {
     }
 
     public static void encode(DeathMessageS2CPacket packet, FriendlyByteBuf buf) {
-        buf.writeComponent(packet.deathMessage.getKiller());
+        ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.encode(buf, packet.deathMessage.getKiller());
         buf.writeUUID(packet.deathMessage.getKillerUUID());
         if (packet.deathMessage.getAssist() != null) {
-            buf.writeComponent(packet.deathMessage.getAssist());
+            ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.encode(buf, packet.deathMessage.getAssist());
             buf.writeUUID(packet.deathMessage.getAssistUUID());
         } else {
-            buf.writeComponent(packet.deathMessage.getKiller());
+            ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.encode(buf, packet.deathMessage.getKiller());
             buf.writeUUID(packet.deathMessage.getKillerUUID());
         }
-        buf.writeComponent(packet.deathMessage.getDead());
+        ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.encode(buf, packet.deathMessage.getDead());
         buf.writeUUID(packet.deathMessage.getDeadUUID());
-        buf.writeItem(packet.deathMessage.getWeapon());
+        buf.writeJsonWithCodec(ItemStack.CODEC, packet.deathMessage.getWeapon());
         buf.writeUtf(packet.deathMessage.getArg());
 
         byte flags = 0;
@@ -51,13 +52,13 @@ public class DeathMessageS2CPacket {
     }
 
     public static DeathMessageS2CPacket decode(FriendlyByteBuf buf) {
-        Component killer = buf.readComponent();
+        Component killer = ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.decode(buf);
         UUID killerUUID = buf.readUUID();
-        Component assist = buf.readComponent();
+        Component assist = ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.decode(buf);
         UUID assistUUID = buf.readUUID();
-        Component dead = buf.readComponent();
+        Component dead = ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.decode(buf);
         UUID deadUUID = buf.readUUID();
-        ItemStack weapon = buf.readItem();
+        ItemStack weapon = buf.readJsonWithCodec(ItemStack.CODEC);
         String arg = buf.readUtf();
         byte flags = buf.readByte();
 
@@ -73,7 +74,7 @@ public class DeathMessageS2CPacket {
                 .build());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(Supplier<PayloadContext> ctx) {
         ctx.get().enqueueWork(() -> {
             CSGameHud.getInstance().getDeathMessageHud().addKillMessage(deathMessage);
             LocalPlayer localPlayer = Minecraft.getInstance().player;

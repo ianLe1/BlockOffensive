@@ -1,5 +1,7 @@
 package net.ptcrys.blockoffensive.client;
 
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.ptcrys.blockoffensive.BOConfig;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.client.data.CSClientData;
@@ -27,32 +29,31 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.MovementInputUpdateEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
 
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = BlockOffensive.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class BOClientEvent {
 
     @SubscribeEvent
-    public static void onRenderGuiOverlayPost(RenderGuiOverlayEvent.Post event) {
+    public static void onRenderGuiLayerPost(RenderGuiLayerEvent.Post event) {
         if (FMLEnvironment.production) return;
-        if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) return;
+        if (!event.getName().equals(VanillaGuiLayers.HOTBAR)) return;
         if (FPSMClient.getGlobalData().isInMap()) return;
         CSGameHud.getInstance().getDeathMessageHud().render(event.getGuiGraphics());
     }
 
     @SubscribeEvent
-    public static void onClientTickEvent(TickEvent.ClientTickEvent event) {
+    public static void onClientTickEvent(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         FPSMClientGlobalData data = FPSMClient.getGlobalData();
-        if (event.phase == TickEvent.Phase.END && mc.player != null && mc.level != null && mc.getConnection() != null && CSClientData.isStart && (!data.isInMap() || !data.isInGame())) {
+        if (mc.player != null && mc.level != null && mc.getConnection() != null && CSClientData.isStart && (!data.isInMap() || !data.isInGame())) {
             FPSMatch.pullGameInfo();
         }
 

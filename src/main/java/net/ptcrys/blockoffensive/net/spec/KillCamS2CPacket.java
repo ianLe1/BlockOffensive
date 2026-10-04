@@ -1,12 +1,13 @@
 package net.ptcrys.blockoffensive.net.spec;
 
+import net.minecraft.network.chat.ComponentSerialization;
 import net.ptcrys.blockoffensive.client.spec.KillCamClientCache;
 import net.ptcrys.blockoffensive.client.spec.KillCamManager;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public class KillCamS2CPacket {
     public static void encode(KillCamS2CPacket p, FriendlyByteBuf buf) {
         buf.writeUUID(p.killerId);
         buf.writeUtf(p.killerName);
-        buf.writeItem(p.weapon);
+        buf.writeJsonWithCodec(ItemStack.CODEC, p.weapon);
         buf.writeDouble(p.killerPos.x).writeDouble(p.killerPos.y).writeDouble(p.killerPos.z);
         buf.writeDouble(p.victimPos.x).writeDouble(p.victimPos.y).writeDouble(p.victimPos.z);
     }
@@ -47,13 +48,13 @@ public class KillCamS2CPacket {
     public static KillCamS2CPacket decode(FriendlyByteBuf buf) {
         UUID id = buf.readUUID();
         String name = buf.readUtf();
-        ItemStack weapon = buf.readItem();
+        ItemStack weapon = buf.readJsonWithCodec(ItemStack.CODEC);
         double kx = buf.readDouble(), ky = buf.readDouble(), kz = buf.readDouble();
         double vx = buf.readDouble(), vy = buf.readDouble(), vz = buf.readDouble();
         return new KillCamS2CPacket(id, name, weapon, kx, ky, kz, vx, vy, vz);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(Supplier<PayloadContext> ctx) {
         ctx.get().enqueueWork(() -> {
             LOG.info("[KillCamC] RECV packet  killer='{}'  A(victimEye)=({},{},{})  B(killerEye)=({},{},{})",
                     killerName,

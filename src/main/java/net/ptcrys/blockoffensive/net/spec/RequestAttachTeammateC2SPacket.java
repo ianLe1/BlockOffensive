@@ -4,7 +4,7 @@ import net.ptcrys.blockoffensive.spectator.BOSpecManager;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -18,8 +18,8 @@ public class RequestAttachTeammateC2SPacket {
         return new RequestAttachTeammateC2SPacket();
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
+    public void handle(Supplier<PayloadContext> ctxSup) {
+        PayloadContext ctx = ctxSup.get();
         ctx.enqueueWork(() -> {
             ServerPlayer sp = ctx.getSender();
             if (sp != null && sp.isSpectator()) {

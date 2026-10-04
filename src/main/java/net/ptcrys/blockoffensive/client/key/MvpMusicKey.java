@@ -1,20 +1,21 @@
 package net.ptcrys.blockoffensive.client.key;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.client.screen.MvpMusicScreen;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import org.lwjgl.glfw.GLFW;
 
 /**
  * MVP 本地音乐设置键（默认 F9）：打开音乐设置页。
  */
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class MvpMusicKey {
 
     public static final KeyMapping KEY_MVP_MUSIC = new KeyMapping(

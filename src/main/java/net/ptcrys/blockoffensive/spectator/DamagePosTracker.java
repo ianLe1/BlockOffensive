@@ -3,11 +3,12 @@ package net.ptcrys.blockoffensive.spectator;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import com.mojang.logging.LogUtils;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -15,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Mod.EventBusSubscriber
+@EventBusSubscriber
 public final class DamagePosTracker {
 
     private static final Logger LOG = LogUtils.getLogger();
@@ -56,7 +57,7 @@ public final class DamagePosTracker {
     }
 
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent e) {
+    public static void onLivingHurt(LivingIncomingDamageEvent e) {
         LivingEntity ent = e.getEntity();
         if (!(ent instanceof ServerPlayer victim)) return;
         if (victim.level().isClientSide) return;

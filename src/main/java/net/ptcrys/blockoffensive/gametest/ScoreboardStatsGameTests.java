@@ -14,10 +14,10 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
@@ -132,7 +132,7 @@ public final class ScoreboardStatsGameTests {
             try {
                 ct.writeToBuf(buf);
                 h.assertTrue(ct.isDirty(), "initial sync to one player cannot consume the pending broadcast");
-                var received = buf.readMap(FriendlyByteBuf::readUUID, FriendlyByteBuf::readInt);
+                var received = buf.readMap((FriendlyByteBuf b) -> b.readUUID(), (FriendlyByteBuf b) -> b.readInt());
                 h.assertTrue(received.equals(ct.snapshot()), "all players receive the authoritative palette");
             } finally {
                 buf.release();

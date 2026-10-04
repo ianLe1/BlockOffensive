@@ -9,7 +9,7 @@ import net.ptcrys.fpsmatch.core.capability.team.TeamCapability;
 import net.ptcrys.fpsmatch.core.team.BaseTeam;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 
 import java.util.UUID;
 
@@ -76,14 +76,14 @@ public class ColoredPlayerCapability extends TeamCapability implements FPSMCapab
 
     @Override
     public void readFromBuf(FriendlyByteBuf buf) {
-        colors.replace(buf.readMap(FriendlyByteBuf::readUUID, FriendlyByteBuf::readInt));
+        colors.replace(buf.readMap((FriendlyByteBuf b) -> b.readUUID(), (FriendlyByteBuf b) -> b.readInt()));
         dirty = false;
     }
 
     @Override
     public void writeToBuf(FriendlyByteBuf buf) {
         tick();
-        buf.writeMap(colors.snapshot(), FriendlyByteBuf::writeUUID, FriendlyByteBuf::writeInt);
+        buf.writeMap(colors.snapshot(), (FriendlyByteBuf b, UUID u) -> b.writeUUID(u), (FriendlyByteBuf b, Integer i) -> b.writeInt(i));
     }
 
     @Override

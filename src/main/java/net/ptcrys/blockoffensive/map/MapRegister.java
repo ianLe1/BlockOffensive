@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.map;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.data.persistence.CSGameMapFixer;
 import net.ptcrys.blockoffensive.map.shop.ItemType;
@@ -9,10 +10,10 @@ import net.ptcrys.fpsmatch.core.persistence.SaveHolder;
 import net.ptcrys.fpsmatch.core.persistence.datafixer.DataFixer;
 import net.ptcrys.fpsmatch.core.shop.FPSMShop;
 
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BlockOffensive.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class MapRegister {
 
     @SubscribeEvent

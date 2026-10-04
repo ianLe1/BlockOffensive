@@ -4,8 +4,8 @@ import net.ptcrys.blockoffensive.BOConfig;
 
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.fml.ModLoadingContext;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.fml.ModList;
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -225,9 +225,11 @@ public class BOMenuIntegration {
         };
     }
 
-    @SuppressWarnings("removal")
     public static void registerModsPage() {
-        ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class, () -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> getConfigScreen(parent)));
+        ModList.get().getModContainerById("blockoffensive").ifPresent(container -> {
+            IConfigScreenFactory factory = (mod, parent) -> getConfigScreen(parent);
+            container.registerExtensionPoint(IConfigScreenFactory.class, factory);
+        });
     }
 
     public static Screen getConfigScreen(@Nullable Screen parent) {

@@ -24,7 +24,7 @@ import net.ptcrys.blockoffensive.net.vote.VoteCastC2SPacket;
 import net.ptcrys.blockoffensive.net.vote.VoteSyncS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 
-import net.minecraftforge.network.NetworkDirection;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister.PayloadDirection;
 
 import java.util.Objects;
 
@@ -53,9 +53,9 @@ public final class BOPacketRegistration {
             switch (direction) {
                 case DEFAULT -> register.registerPacket(packetClass);
                 case PLAY_TO_CLIENT -> register.registerPacket(
-                        packetClass, NetworkDirection.PLAY_TO_CLIENT);
+                        packetClass, PayloadDirection.TO_CLIENT);
                 case PLAY_TO_SERVER -> register.registerPacket(
-                        packetClass, NetworkDirection.PLAY_TO_SERVER);
+                        packetClass, PayloadDirection.TO_SERVER);
             }
         });
     }
@@ -74,8 +74,6 @@ public final class BOPacketRegistration {
                 CSGameSettingsS2CPacket.class,
                 CSTabRemovalS2CPacket.class,
                 DeathMessageS2CPacket.class,
-                PxDeathCompatS2CPacket.class,
-                PxRagdollRemovalCompatS2CPacket.class,
                 CSGameWeaponDataS2CPacket.class,
                 BombFuseS2CPacket.class,
                 PlayerMoveC2SPacket.class,

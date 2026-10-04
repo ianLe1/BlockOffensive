@@ -2,7 +2,7 @@ package net.ptcrys.blockoffensive.server.mvp;
 
 import net.ptcrys.fpsmatch.FPSMatch;
 
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

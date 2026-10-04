@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.client.screen.hud;
 
+import com.mojang.blaze3d.vertex.BufferUploader;
 import net.ptcrys.blockoffensive.data.MvpReason;
 import net.ptcrys.blockoffensive.event.CSHUDRenderEvent;
 import net.ptcrys.blockoffensive.sound.BOSoundRegister;
@@ -15,7 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.neoforge.common.NeoForge;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -73,7 +74,7 @@ public class CSMvpHud {
     private int currentBannerWidthPx = 0;
 
     public void triggerAnimation(MvpReason reason) {
-        MinecraftForge.EVENT_BUS.post(new CSHUDRenderEvent.RenderMvpHud.TriggeredAnimation(reason));
+        NeoForge.EVENT_BUS.post(new CSHUDRenderEvent.RenderMvpHud.TriggeredAnimation(reason));
         this.player = reason.uuid;
         boolean isCtTeam = reason.isCtWinner();
         this.currentWinnerCtTeam = isCtTeam;
@@ -116,7 +117,7 @@ public class CSMvpHud {
 
         if (!animationPlaying) return;
 
-        MinecraftForge.EVENT_BUS.post(new CSHUDRenderEvent.RenderMvpHud.Pre(guiGraphics, screenWidth, screenHeight, this));
+        NeoForge.EVENT_BUS.post(new CSHUDRenderEvent.RenderMvpHud.Pre(guiGraphics, screenWidth, screenHeight, this));
 
         long currentTime = System.currentTimeMillis();
         PoseStack pose = guiGraphics.pose();
@@ -141,7 +142,7 @@ public class CSMvpHud {
             renderMVPInfoPanel(guiGraphics, pose, mvpProgress, scaleFactor, screenWidth, screenHeight, currentTime);
         }
 
-        MinecraftForge.EVENT_BUS.post(new CSHUDRenderEvent.RenderMvpHud.Post(guiGraphics, screenWidth, screenHeight, this));
+        NeoForge.EVENT_BUS.post(new CSHUDRenderEvent.RenderMvpHud.Post(guiGraphics, screenWidth, screenHeight, this));
     }
 
     /**
@@ -443,8 +444,6 @@ public class CSMvpHud {
      */
     private void drawCircle(PoseStack pose, float cx, float cy, float radius, int color, int segments) {
         Matrix4f matrix = pose.last().pose();
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
         float a = ((color >> 24) & 0xFF) / 255.0f;
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float g = ((color >> 8) & 0xFF) / 255.0f;
@@ -454,15 +453,15 @@ public class CSMvpHud {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        buffer.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-        buffer.vertex(matrix, cx, cy, 0).color(r, g, b, a).endVertex();
+        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        buffer.addVertex(matrix, cx, cy, 0).setColor(r, g, b, a);
         for (int i = 0; i <= segments; i++) {
             float angle = (float) (i * Math.PI * 2.0 / segments);
             float x = cx + (float) Math.cos(angle) * radius;
             float y = cy + (float) Math.sin(angle) * radius;
-            buffer.vertex(matrix, x, y, 0).color(r, g, b, a).endVertex();
+            buffer.addVertex(matrix, x, y, 0).setColor(r, g, b, a);
         }
-        tesselator.end();
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
         RenderSystem.disableBlend();
     }
 
@@ -471,8 +470,6 @@ public class CSMvpHud {
      */
     private void drawRing(PoseStack pose, float cx, float cy, float innerRadius, float outerRadius, int color, int segments) {
         Matrix4f matrix = pose.last().pose();
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
         float a = ((color >> 24) & 0xFF) / 255.0f;
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float g = ((color >> 8) & 0xFF) / 255.0f;
@@ -482,15 +479,15 @@ public class CSMvpHud {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        buffer.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
         for (int i = 0; i <= segments; i++) {
             float angle = (float) (i * Math.PI * 2.0 / segments);
             float cos = (float) Math.cos(angle);
             float sin = (float) Math.sin(angle);
-            buffer.vertex(matrix, cx + cos * outerRadius, cy + sin * outerRadius, 0).color(r, g, b, a).endVertex();
-            buffer.vertex(matrix, cx + cos * innerRadius, cy + sin * innerRadius, 0).color(r, g, b, a).endVertex();
+            buffer.addVertex(matrix, cx + cos * outerRadius, cy + sin * outerRadius, 0).setColor(r, g, b, a);
+            buffer.addVertex(matrix, cx + cos * innerRadius, cy + sin * innerRadius, 0).setColor(r, g, b, a);
         }
-        tesselator.end();
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
         RenderSystem.disableBlend();
     }
 
@@ -500,8 +497,6 @@ public class CSMvpHud {
     private void drawArcWedge(PoseStack pose, float cx, float cy, float innerRadius, float outerRadius,
                               float startAngleRad, float endAngleRad, int color, int segments) {
         Matrix4f matrix = pose.last().pose();
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
         float a = ((color >> 24) & 0xFF) / 255.0f;
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float g = ((color >> 8) & 0xFF) / 255.0f;
@@ -511,15 +506,15 @@ public class CSMvpHud {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        buffer.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
         for (int i = 0; i <= segments; i++) {
             float angle = startAngleRad + (endAngleRad - startAngleRad) * (i / (float) segments);
             float cos = (float) Math.cos(angle);
             float sin = (float) Math.sin(angle);
-            buffer.vertex(matrix, cx + cos * outerRadius, cy + sin * outerRadius, 0).color(r, g, b, a).endVertex();
-            buffer.vertex(matrix, cx + cos * innerRadius, cy + sin * innerRadius, 0).color(r, g, b, a).endVertex();
+            buffer.addVertex(matrix, cx + cos * outerRadius, cy + sin * outerRadius, 0).setColor(r, g, b, a);
+            buffer.addVertex(matrix, cx + cos * innerRadius, cy + sin * innerRadius, 0).setColor(r, g, b, a);
         }
-        tesselator.end();
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
         RenderSystem.disableBlend();
     }
 
@@ -570,7 +565,7 @@ public class CSMvpHud {
         PlayerInfo info = getPlayerInfoByUUID(this.player);
 
         if (info != null) {
-            PlayerFaceRenderer.draw(guiGraphics, info.getSkinLocation(), x, y, size);
+            PlayerFaceRenderer.draw(guiGraphics, info.getSkin().texture(), x, y, size);
         } else {
             if (defaultAvatar != null) {
                 guiGraphics.blit(defaultAvatar, x, y, size, size, 0, 0, 64, 64, 64, 64);

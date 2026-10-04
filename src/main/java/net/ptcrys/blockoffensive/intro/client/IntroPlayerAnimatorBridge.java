@@ -7,7 +7,7 @@ import net.ptcrys.blockoffensive.intro.IntroPhase;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;

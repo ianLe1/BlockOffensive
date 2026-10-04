@@ -1,17 +1,18 @@
 package net.ptcrys.blockoffensive.client.shop;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.client.screen.CSGameShopScreen;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.event.RenderHandEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.event.RenderHandEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = "blockoffensive", value = Dist.CLIENT)
+@EventBusSubscriber(modid = "blockoffensive", value = Dist.CLIENT)
 public final class ShopPresentationEvents {
 
     private ShopPresentationEvents() {}
@@ -22,7 +23,7 @@ public final class ShopPresentationEvents {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void hideCrosshair(RenderGuiOverlayEvent.Pre event) {
-        if (Minecraft.getInstance().screen instanceof CSGameShopScreen && event.getOverlay().id().equals(VanillaGuiOverlay.CROSSHAIR.id())) event.setCanceled(true);
+    public static void hideCrosshair(RenderGuiLayerEvent.Pre event) {
+        if (Minecraft.getInstance().screen instanceof CSGameShopScreen && event.getName().equals(VanillaGuiLayers.CROSSHAIR)) event.setCanceled(true);
     }
 }

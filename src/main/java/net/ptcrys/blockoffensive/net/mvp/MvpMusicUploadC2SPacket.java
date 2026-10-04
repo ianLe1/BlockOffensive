@@ -4,7 +4,7 @@ import net.ptcrys.blockoffensive.server.mvp.MvpMusicServerStore;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -49,8 +49,8 @@ public class MvpMusicUploadC2SPacket {
                 buf.readUtf(MAX_DISPLAY_NAME_LENGTH));
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
+    public void handle(Supplier<PayloadContext> ctxSup) {
+        PayloadContext ctx = ctxSup.get();
         ctx.enqueueWork(() -> {
             ServerPlayer sp = ctx.getSender();
             if (sp == null || !sp.getUUID().equals(playerId)) {

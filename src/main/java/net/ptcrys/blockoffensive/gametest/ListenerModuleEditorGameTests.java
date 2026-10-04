@@ -1,5 +1,7 @@
 package net.ptcrys.blockoffensive.gametest;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 import net.ptcrys.fpsmatch.common.packet.shop.ListenerModuleActionC2SPacket;
 import net.ptcrys.fpsmatch.common.packet.shop.ListenerModuleActionC2SPacket.Action;
 import net.ptcrys.fpsmatch.common.packet.shop.ListenerModuleResultS2CPacket;
@@ -18,8 +20,8 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
@@ -168,9 +170,9 @@ public final class ListenerModuleEditorGameTests {
     public static void catalogAndActionPacketsRoundTripDefinitionsAndReferences(GameTestHelper helper) {
         LMManager manager = new LMManager();
         var definition = definition("changeItem_wire_test", 300);
-        definition.changedItem().getOrCreateTag().putString("lost", "copy");
+        CustomData.update(DataComponents.CUSTOM_DATA, definition.changedItem(), tag -> tag.putString("lost", "copy"));
         var item = new ItemStack(Items.GOLDEN_APPLE);
-        item.getOrCreateTag().putString("rule", "retained");
+        CustomData.update(DataComponents.CUSTOM_DATA, item, tag -> tag.putString("rule", "retained"));
         definition = new Definition(definition.name(), definition.defaultItem(), 50, item, 300);
         manager.addListenerType(definition.create());
         var refs = List.of(new ListenerModuleService.ShopRef(TARGET, shop(definition.create())));
@@ -180,14 +182,14 @@ public final class ListenerModuleEditorGameTests {
             var request = new ListenerModuleActionC2SPacket(13, TARGET, Action.UPDATE, catalog.revision(), definition);
             ListenerModuleActionC2SPacket.encode(request, buf);
             var decoded = ListenerModuleActionC2SPacket.decode(buf);
-            equal("retained", decoded.draft().changedItem().getTag().getString("rule"));
+            equal("retained", decoded.draft().changedItem().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString("rule"));
             buf.clear();
             ListenerModuleResultS2CPacket.encode(new ListenerModuleResultS2CPacket(13, TARGET, Action.UPDATE, ShopEditorResult.SUCCESS, catalog, null), buf);
             var reply = ListenerModuleResultS2CPacket.decode(buf);
             var module = reply.catalog().modules().stream().filter(m -> m.name().equals(request.draft().name())).findFirst().orElseThrow();
             equal(TARGET, module.references().get(0).target());
             equal(0, module.references().get(0).index());
-            equal("retained", module.definition().changedItem().getTag().getString("rule"));
+            equal("retained", module.definition().changedItem().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString("rule"));
         } finally {
             buf.release();
         }

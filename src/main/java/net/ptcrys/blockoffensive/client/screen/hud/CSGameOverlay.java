@@ -350,7 +350,7 @@ public class CSGameOverlay {
             int avY = rowY + margin;
             int smallAvSize = avatarSize - margin * 2;
 
-            PlayerFaceRenderer.draw(guiGraphics, player.getSkinLocation(), avX, avY, smallAvSize);
+            PlayerFaceRenderer.draw(guiGraphics, player.getSkin().texture(), avX, avY, smallAvSize);
 
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             int startY = rowY + avatarSize + margin;

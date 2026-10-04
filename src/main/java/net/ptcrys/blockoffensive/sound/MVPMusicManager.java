@@ -1,13 +1,14 @@
 package net.ptcrys.blockoffensive.sound;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.fpsmatch.common.event.register.RegisterFPSMSaveDataEvent;
 import net.ptcrys.fpsmatch.core.persistence.FPSMDataManager;
 import net.ptcrys.fpsmatch.core.persistence.SaveHolder;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
@@ -17,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 @SuppressWarnings("all")
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BlockOffensive.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class MVPMusicManager {
 
     public static final Codec<MVPMusicManager> CODEC = Codec.unboundedMap(Codec.STRING, Entry.CODEC).xmap(MVPMusicManager::new,

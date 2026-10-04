@@ -6,7 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public final class IntroDisplayWeaponResolver {
     private static Resolved item(IntroTeamSide side, String itemId, int formationIndex) {
         ResourceLocation requested = requestedId(side, itemId);
         if (isExplicitNonTaczItem(itemId, requested)) {
-            Item item = ForgeRegistries.ITEMS.getValue(requested);
+            Item item = BuiltInRegistries.ITEM.get(requested);
             if (item != null) {
                 return new Resolved(new ItemStack(item), requested.toString(), false);
             }
@@ -60,7 +60,7 @@ public final class IntroDisplayWeaponResolver {
             return new Resolved(taczGun, requested.toString(), false);
         }
         if (isExplicitItem(itemId)) {
-            Item item = ForgeRegistries.ITEMS.getValue(requested);
+            Item item = BuiltInRegistries.ITEM.get(requested);
             if (item != null) {
                 return new Resolved(new ItemStack(item), requested.toString(), false);
             }
@@ -129,7 +129,7 @@ public final class IntroDisplayWeaponResolver {
     }
 
     private static ItemStack findRegisteredGunItem() {
-        for (Item item : ForgeRegistries.ITEMS) {
+        for (Item item : BuiltInRegistries.ITEM) {
             if (isTaczGunItem(item)) {
                 return new ItemStack(item);
             }
@@ -156,7 +156,7 @@ public final class IntroDisplayWeaponResolver {
     }
 
     private static String itemId(ItemStack stack) {
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return id == null ? "unknown" : id.toString();
     }
 

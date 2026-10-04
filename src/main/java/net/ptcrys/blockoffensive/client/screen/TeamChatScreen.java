@@ -29,11 +29,11 @@ public class TeamChatScreen extends ChatScreen {
     }
 
     @Override
-    public boolean handleChatInput(String pInput, boolean pAddToRecentChat) {
+    public void handleChatInput(String pInput, boolean pAddToRecentChat) {
         if (!pInput.isEmpty()) {
             if (pInput.startsWith("/")) {
                 super.handleChatInput(pInput, pAddToRecentChat);
-                return minecraft.screen == this;
+                return;
             } else {
                 if (pAddToRecentChat) {
                     this.minecraft.gui.getChat().addRecentChat(pInput);
@@ -42,7 +42,6 @@ public class TeamChatScreen extends ChatScreen {
             MutableComponent teamMessage = BOUtil.buildTeamChatMessage(Component.literal(pInput));
             FPSMClient.getGlobalData().getCurrentClientTeam().ifPresent(team -> team.sendMessage(teamMessage));
         }
-        return minecraft.screen == this;
     }
 
     @Override

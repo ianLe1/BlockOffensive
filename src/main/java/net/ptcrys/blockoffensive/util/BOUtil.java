@@ -37,8 +37,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -157,7 +157,7 @@ public class BOUtil {
         if (player == null) return message;
 
         return FPSMClient.getGlobalData().getCurrentClientTeam().map(team -> {
-            TextColor textColor = TextColor.parseColor(team.name.equals("ct") ? "#96C8FA" : "#EAC055");
+            TextColor textColor = TextColor.parseColor(team.name.equals("ct") ? "#96C8FA" : "#EAC055").result().orElseThrow();
 
             MutableComponent head = Component.literal("[" + team.name.toUpperCase(Locale.US) + "]")
                     .withStyle(Style.EMPTY.withColor(textColor));

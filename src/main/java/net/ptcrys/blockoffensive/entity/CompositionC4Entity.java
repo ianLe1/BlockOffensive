@@ -9,6 +9,7 @@ import net.ptcrys.blockoffensive.net.bomb.BombDemolitionProgressS2CPacket;
 import net.ptcrys.blockoffensive.net.spec.BombFuseS2CPacket;
 import net.ptcrys.blockoffensive.sound.BOSoundRegister;
 import net.ptcrys.blockoffensive.util.BOUtil;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import net.ptcrys.fpsmatch.core.FPSMCore;
 import net.ptcrys.fpsmatch.core.entity.BlastBombEntity;
 import net.ptcrys.fpsmatch.core.map.BaseMap;
@@ -36,7 +37,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
@@ -124,11 +125,11 @@ public class CompositionC4Entity extends BlastBombEntity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        this.entityData.define(DATA_EXPLOSION_RADIUS, DEFAULT_EXPLOSION_RADIUS);
-        this.entityData.define(DATA_DELETE_TIME, 0);
-        this.entityData.define(DATA_EXPLOSION_INTERACTION, Level.ExplosionInteraction.NONE.ordinal());
-        this.entityData.define(DATA_INSTANT_KILL_RADIUS, DEFAULT_INSTANT_KILL_RADIUS);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(DATA_EXPLOSION_RADIUS, DEFAULT_EXPLOSION_RADIUS);
+        builder.define(DATA_DELETE_TIME, 0);
+        builder.define(DATA_EXPLOSION_INTERACTION, Level.ExplosionInteraction.NONE.ordinal());
+        builder.define(DATA_INSTANT_KILL_RADIUS, DEFAULT_INSTANT_KILL_RADIUS);
     }
 
     @Override
@@ -141,14 +142,14 @@ public class CompositionC4Entity extends BlastBombEntity {
     }
 
     @Override
-    public void onAddedToWorld() {
-        super.onAddedToWorld();
+    public void onAddedToLevel() {
+        super.onAddedToLevel();
         forceC4Chunk(true);
     }
 
     @Override
-    public void onRemovedFromWorld() {
-        super.onRemovedFromWorld();
+    public void onRemovedFromLevel() {
+        super.onRemovedFromLevel();
         forceC4Chunk(false);
         if (!this.level().isClientSide) {
             if (map != null) {
@@ -215,7 +216,7 @@ public class CompositionC4Entity extends BlastBombEntity {
                         this.demolisher = null;
                     }
                     if (i % 2 == 0 && i > 0) {
-                        BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new BombActionS2CPacket());
+                        NetworkPacketRegister.sendToPlayer(serverPlayer, new BombActionS2CPacket());
                     }
                 }
             }
@@ -302,7 +303,7 @@ public class CompositionC4Entity extends BlastBombEntity {
         }
         this.map.getMapTeams().getSpecPlayers().forEach((pUUID) -> {
             Optional<ServerPlayer> receiver = FPSMCore.getInstance().getPlayerByUUID(pUUID);
-            receiver.ifPresent(player -> BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new BombFuseS2CPacket(pLife, BOConfig.common.fuseTime.get())));
+            receiver.ifPresent(player -> NetworkPacketRegister.sendToPlayer(player, new BombFuseS2CPacket(pLife, BOConfig.common.fuseTime.get())));
         });
     }
 
@@ -315,7 +316,7 @@ public class CompositionC4Entity extends BlastBombEntity {
                     map.getMapTeams().getTeamByPlayer(receiver).ifPresent(team -> {
                         boolean flag = this.map.checkCanPlacingBombs(team.getFixedName());
                         if (!flag) {
-                            BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> receiver), new BombDemolitionProgressS2CPacket(progress));
+                            NetworkPacketRegister.sendToPlayer(receiver, new BombDemolitionProgressS2CPacket(progress));
                         }
                     });
                 });
@@ -324,7 +325,7 @@ public class CompositionC4Entity extends BlastBombEntity {
             map.getMapTeams().getSpecPlayers().forEach((pUUID) -> {
                 ServerPlayer receiver = (ServerPlayer) this.level().getPlayerByUUID(pUUID);
                 if (receiver != null) {
-                    BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> receiver), new BombDemolitionProgressS2CPacket(progress));
+                    NetworkPacketRegister.sendToPlayer(receiver, new BombDemolitionProgressS2CPacket(progress));
                 }
             });
         }
@@ -368,7 +369,7 @@ public class CompositionC4Entity extends BlastBombEntity {
                 this.playDefusingSound();
                 this.demolisher = player;
                 map.getMapTeams().getTeamByPlayer(player).ifPresent(team -> {
-                    team.sendMessage(BOUtil.buildTeamChatMessage(player, team, Component.translatable("blockoffensive.demolish.message.c4"), Component.empty(), TextColor.parseColor(team.name.equals("ct") ? "#96C8FA" : "#EAC055")));
+                    team.sendMessage(BOUtil.buildTeamChatMessage(player, team, Component.translatable("blockoffensive.demolish.message.c4"), Component.empty(), TextColor.parseColor(team.name.equals("ct") ? "#96C8FA" : "#EAC055").result().orElseThrow()));
                 });
             }
         }

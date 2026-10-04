@@ -13,7 +13,7 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +30,7 @@ public record BombActionC2SPacket(boolean action) {
                 buf.readBoolean());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(Supplier<PayloadContext> ctx) {
         ServerPlayer sender = ctx.get().getSender();
         // 所有 map/team 查询都必须在 enqueueWork 内于服务端主线程执行，
         // 避免在 netty 线程读 FPSMCore 的非线程安全缓存而引发数据竞争。

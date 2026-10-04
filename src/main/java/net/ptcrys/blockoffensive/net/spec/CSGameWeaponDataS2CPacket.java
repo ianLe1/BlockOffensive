@@ -4,7 +4,7 @@ import net.ptcrys.blockoffensive.client.data.CSClientData;
 import net.ptcrys.blockoffensive.client.data.WeaponData;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -16,7 +16,7 @@ public record CSGameWeaponDataS2CPacket(Map<UUID, WeaponData> weaponDataMap) {
     private static final int MAX_VALUES_PER_WEAPON = 32;
 
     public static void encode(CSGameWeaponDataS2CPacket packet, FriendlyByteBuf buf) {
-        buf.writeMap(packet.weaponDataMap, FriendlyByteBuf::writeUUID,
+        buf.writeMap(packet.weaponDataMap, (FriendlyByteBuf b, UUID u) -> b.writeUUID(u),
                 (b, weaponData) -> {
                     b.writeMap(weaponData.weaponData(), FriendlyByteBuf::writeUtf,
                             (b1, list) -> b1.writeCollection(list, FriendlyByteBuf::writeUtf));
@@ -47,8 +47,8 @@ public record CSGameWeaponDataS2CPacket(Map<UUID, WeaponData> weaponDataMap) {
         return new CSGameWeaponDataS2CPacket(weaponDataMap);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public void handle(Supplier<PayloadContext> contextSupplier) {
+        PayloadContext context = contextSupplier.get();
         context.enqueueWork(() -> {
             synchronized (CSClientData.weaponData) {
                 CSClientData.weaponData.putAll(weaponDataMap);

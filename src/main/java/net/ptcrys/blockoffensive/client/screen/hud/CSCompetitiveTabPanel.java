@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.client.screen.hud;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.client.data.CSClientData;
 import net.ptcrys.blockoffensive.data.CSScoreboardHistory;
@@ -14,11 +15,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -30,7 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /** Reference-sized CS panel. All geometry here is independent of the legacy deathmatch layout. */
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = BlockOffensive.MODID, value = Dist.CLIENT)
 public final class CSCompetitiveTabPanel {
 
     private static final int CT = 0xFFB4D5EB;
@@ -136,7 +137,7 @@ public final class CSCompetitiveTabPanel {
         if (local) g.fill(TABLE_X, y, TABLE_RIGHT, y + ROW - 1, (color & 0xFFFFFF) | 0x35000000);
         centered(g, Integer.toString(info.getLatency()), 74, y + 3, MUTED, .95f);
         g.fill(101, y, 113, y + 12, BOUtil.getColor(id));
-        PlayerFaceRenderer.draw(g, info.getSkinLocation(), 102, y + 1, 10);
+        PlayerFaceRenderer.draw(g, info.getSkin().texture(), 102, y + 1, 10);
         String name = info.getTabListDisplayName() == null ? info.getProfile().getName() : info.getTabListDisplayName().getString();
         text(g, fit(name, STATS_X - 122, .95f), 117, y + 3, color, .95f);
         String[] values = values(id, pd, ct);

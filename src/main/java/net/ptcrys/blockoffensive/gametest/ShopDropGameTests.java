@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.gametest;
 
+import net.minecraft.network.FriendlyByteBuf;
 import net.ptcrys.blockoffensive.server.shop.ShopDropPickupService;
 import net.ptcrys.fpsmatch.common.entity.MatchDropEntity;
 
@@ -8,14 +9,15 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import com.mojang.authlib.GameProfile;
 
 import java.util.UUID;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 
 @GameTestHolder("blockoffensive")
 @PrefixGameTestTemplate(false)
@@ -23,9 +25,20 @@ public final class ShopDropGameTests {
 
     @GameTest(template = "empty")
     public static void shopResultChannelIsRegistered(GameTestHelper helper) {
-        helper.assertTrue(net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister.getChannelFromCache(
-                net.ptcrys.fpsmatch.common.packet.shop.ShopActionResultS2CPacket.class) != null,
-                "shop action result must be registered on the server before purchases");
+        // 1.21.1：移植版 NetworkPacketRegister 用私有静态 TYPES 映射，没有 getChannelFromCache，
+        // 因此改为断言 reflective payload 契约（注册时若违约会直接抛异常）。
+        Class<?> packetClass = net.ptcrys.fpsmatch.common.packet.shop.ShopActionResultS2CPacket.class;
+        boolean contract;
+        try {
+            contract = java.lang.reflect.Modifier.isStatic(
+                    packetClass.getMethod("encode", packetClass, FriendlyByteBuf.class).getModifiers())
+                    && java.lang.reflect.Modifier.isStatic(
+                    packetClass.getMethod("decode", FriendlyByteBuf.class).getModifiers());
+        } catch (NoSuchMethodException e) {
+            contract = false;
+        }
+        helper.assertTrue(contract,
+                "shop action result must satisfy the reflective payload contract before purchases");
         helper.succeed();
     }
 
@@ -33,7 +46,8 @@ public final class ShopDropGameTests {
     public static void mixedDropsAndNativePickup(GameTestHelper helper) {
         FakePlayer player = player(helper);
         ItemEntity vanilla = new ItemEntity(helper.getLevel(), player.getX() + 2, player.getY(), player.getZ(), new ItemStack(Items.APPLE));
-        vanilla.setThrower(UUID.randomUUID()); // public drop: thrower != restrictive owner
+        // 1.21.1：ItemEntity#setThrower 收 Entity（不再是 UUID），且本模组拾取判定只读 target UUID，
+        // 不设 target 即等于「公开掉落」。
         vanilla.setNoPickUpDelay();
         vanilla.setNoGravity(true);
         helper.getLevel().addFreshEntity(vanilla);

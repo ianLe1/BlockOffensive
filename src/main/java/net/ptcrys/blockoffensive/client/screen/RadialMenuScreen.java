@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 
 /**
  * Z 键标记轮盘（CSGO 风格）：
@@ -163,7 +164,7 @@ public class RadialMenuScreen extends Screen {
                     slot, String.format(java.util.Locale.ROOT, "%.2f", target.x),
                     String.format(java.util.Locale.ROOT, "%.2f", target.y),
                     String.format(java.util.Locale.ROOT, "%.2f", target.z));
-            BlockOffensive.INSTANCE.sendToServer(new PingC2SPacket(TYPES[slot], target.x, target.y, target.z));
+            NetworkPacketRegister.sendToServer(new PingC2SPacket(TYPES[slot], target.x, target.y, target.z));
         } catch (Throwable t) {
             com.mojang.logging.LogUtils.getLogger().error("[PingC2S] failed", t);
             mc.player.displayClientMessage(

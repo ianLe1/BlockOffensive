@@ -10,7 +10,7 @@ import net.ptcrys.fpsmatch.core.team.ServerTeam;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -39,8 +39,8 @@ public final class ShopNearbyDropsRequestC2SPacket {
         return new ShopNearbyDropsRequestC2SPacket(buffer.readLong());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public void handle(Supplier<PayloadContext> contextSupplier) {
+        PayloadContext context = contextSupplier.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player == null || !ShopDropPickupService.acceptListRequest(player)) {

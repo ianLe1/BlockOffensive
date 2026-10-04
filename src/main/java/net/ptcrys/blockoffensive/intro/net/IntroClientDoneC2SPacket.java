@@ -3,7 +3,7 @@ package net.ptcrys.blockoffensive.intro.net;
 import net.ptcrys.blockoffensive.intro.IntroRuntimeController;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.UUID;
 
@@ -36,13 +36,13 @@ public class IntroClientDoneC2SPacket {
         buf.writeUtf(packet.reason, MAX_REASON_LENGTH);
     }
 
-    public static void handle(IntroClientDoneC2SPacket packet, java.util.function.Supplier<NetworkEvent.Context> context) {
-        NetworkEvent.Context ctx = context.get();
+    public static void handle(IntroClientDoneC2SPacket packet, java.util.function.Supplier<PayloadContext> context) {
+        PayloadContext ctx = context.get();
         ctx.enqueueWork(() -> IntroRuntimeController.onClientDone(ctx.getSender(), packet));
         ctx.setPacketHandled(true);
     }
 
-    public void handle(java.util.function.Supplier<NetworkEvent.Context> context) {
+    public void handle(java.util.function.Supplier<PayloadContext> context) {
         handle(this, context);
     }
 }

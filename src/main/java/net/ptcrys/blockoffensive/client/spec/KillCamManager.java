@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.client.spec;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.net.spec.RequestAttachTeammateC2SPacket;
 import net.ptcrys.fpsmatch.common.camera.CameraEndReason;
@@ -13,6 +14,7 @@ import net.ptcrys.fpsmatch.common.client.spec.SpectateMode;
 import net.ptcrys.fpsmatch.common.client.spec.SpectateState;
 import net.ptcrys.fpsmatch.common.client.spec.SpectateTarget;
 import net.ptcrys.fpsmatch.common.client.spec.SpectatorCameraController;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import net.ptcrys.fpsmatch.core.team.ClientTeam;
 import net.ptcrys.fpsmatch.util.FPSMFormatUtil;
 
@@ -31,15 +33,14 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Team;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.RenderGuiEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.EventBusSubscriber.Bus;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.Window;
@@ -52,7 +53,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
-@EventBusSubscriber(value = { Dist.CLIENT }, bus = Bus.FORGE)
+@EventBusSubscriber(value = { Dist.CLIENT }, bus = Bus.GAME)
 public final class KillCamManager {
 
     private static final double EXTRA_DIST = 5.0D;
@@ -213,9 +214,8 @@ public final class KillCamManager {
     }
 
     @SubscribeEvent
-    public static void tick(TickEvent.ClientTickEvent e) {
-        if (e.phase != TickEvent.Phase.END) return;
-        Minecraft mc = Minecraft.getInstance();
+    public static void tick(ClientTickEvent.Post e) {
+                Minecraft mc = Minecraft.getInstance();
         if (mc.isPaused()) return;
         LocalPlayer pl = mc.player;
         if (pl == null || mc.level == null) {
@@ -256,7 +256,7 @@ public final class KillCamManager {
                 return;
             }
             if (timeline.shouldRequestTarget()) {
-                BlockOffensive.INSTANCE.sendToServer(new RequestAttachTeammateC2SPacket());
+                NetworkPacketRegister.sendToServer(new RequestAttachTeammateC2SPacket());
             }
         }
     }
@@ -290,10 +290,9 @@ public final class KillCamManager {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderGuiPost(RenderGuiEvent.Post e) {
         if (!timeline.showInformation()) return;
-        Window win = e.getWindow();
-        renderDamageDirection(e.getGuiGraphics(), win.getGuiScaledWidth(), win.getGuiScaledHeight(), timeline.shakeProgress(0.0F));
-        renderKillHud(Minecraft.getInstance(), e.getGuiGraphics(),
-                win.getGuiScaledWidth(), win.getGuiScaledHeight());
+        GuiGraphics gg = e.getGuiGraphics();
+        renderDamageDirection(gg, gg.guiWidth(), gg.guiHeight(), timeline.shakeProgress(0.0F));
+        renderKillHud(Minecraft.getInstance(), gg, gg.guiWidth(), gg.guiHeight());
     }
 
     private static void renderDamageDirection(GuiGraphics gg, int sw, int sh, float strength) {
@@ -502,7 +501,7 @@ public final class KillCamManager {
     }
 
     private static ResourceLocation fetchSkin(UUID id, String name) {
-        return Minecraft.getInstance().getSkinManager().getInsecureSkinLocation(new GameProfile(id, name));
+        return Minecraft.getInstance().getSkinManager().getInsecureSkin(new GameProfile(id, name)).texture();
     }
 
     private static void drawGradientPanelRect(GuiGraphics gg, int x0, int y0, int x1, int y1, int startARGB, int endARGB, float gamma) {

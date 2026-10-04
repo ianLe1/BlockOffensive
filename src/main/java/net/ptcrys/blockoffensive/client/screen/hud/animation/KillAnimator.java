@@ -4,7 +4,6 @@ import net.ptcrys.blockoffensive.data.DeathMessage;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.client.gui.overlay.ForgeGui;
 
 public interface KillAnimator {
 
@@ -12,7 +11,7 @@ public interface KillAnimator {
 
     void reset(); // 强制停止
 
-    void render(Minecraft mc, ForgeGui gui, GuiGraphics guiGraphics, int centerX, int y); // 渲染逻辑
+    void render(Minecraft mc, GuiGraphics guiGraphics, int centerX, int y); // 渲染逻辑
 
     boolean isActive(); // 是否在播放中
 

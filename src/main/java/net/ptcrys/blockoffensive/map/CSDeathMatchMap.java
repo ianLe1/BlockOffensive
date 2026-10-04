@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.map;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.spectator.BOSpecManager;
 import net.ptcrys.fpsmatch.common.attributes.ammo.BulletproofArmorAttribute;
@@ -39,7 +40,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.Team;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
 
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
@@ -47,7 +48,9 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.*;
 
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+// 1.21.1: 该类自身没有任何 @SubscribeEvent，保留 @EventBusSubscriber 会让
+// AutomaticEventSubscriber 抛 "has no @SubscribeEvent methods, but register was called anyway"。
+// 父类链（CSMap -> BaseRoundMap -> BaseMap）也都没有订阅，删注解无副作用。
 public class CSDeathMatchMap extends CSMap {
 
     /**

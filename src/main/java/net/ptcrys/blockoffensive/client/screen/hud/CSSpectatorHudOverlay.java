@@ -486,7 +486,7 @@ public final class CSSpectatorHudOverlay {
         g.pose().pushPose();
         g.pose().translate(avatarX, avatarY, 0);
         g.pose().scale(avatarSize / 8f, avatarSize / 8f, 1f);
-        g.blit(lastTargetPlayer.getSkinTextureLocation(), 0, 0, 8, 8, 8, 8, 64, 64);
+        g.blit(lastTargetPlayer.getSkin().texture(), 0, 0, 8, 8, 8, 8, 64, 64);
         g.pose().popPose();
     }
 

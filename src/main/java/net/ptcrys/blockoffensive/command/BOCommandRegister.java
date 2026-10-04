@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.command;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.data.DeathMessage;
 import net.ptcrys.blockoffensive.intro.IntroCommand;
@@ -18,10 +19,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -29,8 +30,9 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
 import java.util.Collection;
 import java.util.UUID;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, modid = BlockOffensive.MODID)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME, modid = BlockOffensive.MODID)
 public class BOCommandRegister {
 
     @SubscribeEvent
@@ -62,7 +64,6 @@ public class BOCommandRegister {
             event.registerHelp("fpsm debug_death_icons", "commands.blockoffensive.help.death_icons");
             event.registerHelp("fpsm debug death_icons", "commands.blockoffensive.help.death_icons");
             event.addChild(BOTaczLiveFireDebugCommand.fpsmCommand());
-            event.addChild(BOPhysicsRagdollDebugCommand.fpsmCommand());
             event.addChild(Commands.literal("debug_death_icons")
                     .requires(source -> source.hasPermission(2))
                     .executes(BOCommandRegister::handleDebugDeathIconsSelf)
@@ -71,7 +72,6 @@ public class BOCommandRegister {
 
             event.addChild(Commands.literal("debug")
                     .then(BOTaczLiveFireDebugCommand.fpsmCommand())
-                    .then(BOPhysicsRagdollDebugCommand.fpsmCommand())
                     .then(Commands.literal("death_icons")
                             .requires(source -> source.hasPermission(2))
                             .executes(BOCommandRegister::handleDebugDeathIconsSelf)
@@ -117,7 +117,7 @@ public class BOCommandRegister {
                     .setThroughSmoke(true)
                     .setThroughWall(true)
                     .build();
-            BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new DeathMessageS2CPacket(message));
+            NetworkPacketRegister.sendToPlayer(player, new DeathMessageS2CPacket(message));
         }
 
         context.getSource().sendSuccess(() -> Component.literal("Sent debug death icon message to " + players.size() + " player(s)."), true);

@@ -1,7 +1,7 @@
 package net.ptcrys.blockoffensive.client.mvp;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;

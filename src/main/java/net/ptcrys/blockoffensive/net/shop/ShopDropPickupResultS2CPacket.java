@@ -1,14 +1,15 @@
 package net.ptcrys.blockoffensive.net.shop;
 
+import net.minecraft.network.chat.ComponentSerialization;
 import net.ptcrys.blockoffensive.client.shop.ShopDropClientState;
 import net.ptcrys.blockoffensive.server.shop.ShopDropPickupService;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.ptcrys.blockoffensive.net.ClientPacketExecutor;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -38,7 +39,7 @@ public record ShopDropPickupResultS2CPacket(
         buffer.writeUUID(packet.entityId());
         buffer.writeEnum(packet.result());
         buffer.writeEnum(packet.reason());
-        buffer.writeItem(packet.authoritativeStack());
+        buffer.writeJsonWithCodec(ItemStack.CODEC, packet.authoritativeStack());
     }
 
     public static ShopDropPickupResultS2CPacket decode(FriendlyByteBuf buffer) {
@@ -47,14 +48,11 @@ public record ShopDropPickupResultS2CPacket(
                 buffer.readUUID(),
                 buffer.readEnum(ShopDropPickupService.Result.class),
                 buffer.readEnum(ShopDropPickupService.FailureReason.class),
-                buffer.readItem());
+                buffer.readJsonWithCodec(ItemStack.CODEC));
     }
 
-    public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT, () -> () -> ShopDropClientState.acceptResult(this)));
-        context.setPacketHandled(true);
+    public void handle(Supplier<PayloadContext> contextSupplier) {
+        ClientPacketExecutor.execute(contextSupplier, this);
     }
 
     /** User-facing text is deliberately derived from the server result code. */

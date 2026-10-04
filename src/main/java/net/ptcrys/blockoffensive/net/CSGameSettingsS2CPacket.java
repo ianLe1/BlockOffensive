@@ -3,7 +3,7 @@ package net.ptcrys.blockoffensive.net;
 import net.ptcrys.blockoffensive.client.data.CSClientData;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -74,7 +74,7 @@ public record CSGameSettingsS2CPacket(
                 new GameFlags(buf.readByte()));
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(Supplier<PayloadContext> ctx) {
         ctx.get().enqueueWork(() -> {
             CSClientData.cTWinnerRounds = this.cTWinnerRounds;
             CSClientData.tWinnerRounds = this.tWinnerRounds;

@@ -171,7 +171,7 @@ public class CSDMOverlay {
         int avY = y + margin;
         int smallAvSize = size - margin * 2;
 
-        PlayerFaceRenderer.draw(guiGraphics, player.getSkinLocation(), avX, avY, smallAvSize);
+        PlayerFaceRenderer.draw(guiGraphics, player.getSkin().texture(), avX, avY, smallAvSize);
 
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }

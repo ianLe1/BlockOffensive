@@ -1,11 +1,13 @@
 package net.ptcrys.blockoffensive.client;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.client.key.DismantleBombKey;
 import net.ptcrys.blockoffensive.client.key.MvpMusicKey;
 import net.ptcrys.blockoffensive.client.key.OpenShopKey;
 import net.ptcrys.blockoffensive.client.key.RadioKey;
 import net.ptcrys.blockoffensive.client.key.SwitchSpectatorKey;
+import net.ptcrys.blockoffensive.client.net.BOClientPacketRegistrar;
 import net.ptcrys.blockoffensive.client.renderer.C4Renderer;
 import net.ptcrys.blockoffensive.client.screen.hud.*;
 import net.ptcrys.blockoffensive.entity.BOEntityRegister;
@@ -18,18 +20,18 @@ import net.minecraft.Optionull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.world.scores.PlayerTeam;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT, modid = BlockOffensive.MODID)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT, modid = BlockOffensive.MODID)
 public class BOClientBootstrap {
 
     public static final Comparator<PlayerInfo> PLAYER_COMPARATOR = Comparator.<PlayerInfo>comparingInt((playerInfo) -> 0)
@@ -56,6 +58,7 @@ public class BOClientBootstrap {
 
         FPSMGameHudManager.INSTANCE.registerHud("cs", CSGameHud.getInstance());
         FPSMGameHudManager.INSTANCE.registerHud("csdm", CSGameHud.getInstance());
+        BOClientPacketRegistrar.register();
     }
 
     @SubscribeEvent

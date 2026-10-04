@@ -1,5 +1,7 @@
 package net.ptcrys.blockoffensive.gametest;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 import net.ptcrys.fpsmatch.common.packet.shop.SaveShopSlotConfigurationC2SPacket;
 import net.ptcrys.fpsmatch.common.packet.shop.ShopEditorResultS2CPacket;
 import net.ptcrys.fpsmatch.common.shop.editor.ShopEditorResult;
@@ -15,8 +17,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import io.netty.buffer.Unpooled;
 
@@ -105,13 +107,13 @@ public final class ShopEditorGameTests {
         CompoundTag first = new CompoundTag();
         first.putInt("Aa", 1);
         first.putInt("BB", 2);
-        item.setTag(first);
+        item.set(DataComponents.CUSTOM_DATA, CustomData.of(first));
         shop.getDefaultShopSlotListByType("FIRST").get(0).setItemSupplier(item::copy);
         String before = ShopEditorService.revision(shop);
         CompoundTag second = new CompoundTag();
         second.putInt("BB", 2);
         second.putInt("Aa", 1);
-        item.setTag(second);
+        item.set(DataComponents.CUSTOM_DATA, CustomData.of(second));
         assertEquals(before, ShopEditorService.revision(shop));
         second.putInt("Aa", 3);
         assertNotEquals(before, ShopEditorService.revision(shop));
@@ -164,7 +166,7 @@ public final class ShopEditorGameTests {
     @GameTest(template = "empty")
     public static void snapshotAndSaveWireFormatsPreserveServerOnlyModuleNamesAndNbt(GameTestHelper helper) {
         ItemStack item = new ItemStack(Items.APPLE, 3);
-        item.getOrCreateTag().putString("sample", "full-nbt");
+        CustomData.update(DataComponents.CUSTOM_DATA, item, tag -> tag.putString("sample", "full-nbt"));
         var slot = new ShopEditorSnapshot.Slot(item, 900_000, 99_999, 50_000, 1, List.of("server-only"));
         var snapshot = new ShopEditorSnapshot(TARGET, "revision", List.of(new ShopEditorSnapshot.Category("FIRST", List.of(slot))), List.of("server-only"));
         var result = new ShopEditorResultS2CPacket(123, ShopEditorResultS2CPacket.Operation.LOAD, TARGET, ShopEditorResult.SUCCESS, snapshot);

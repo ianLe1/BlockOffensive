@@ -3,7 +3,7 @@ package net.ptcrys.blockoffensive.net.mvp;
 import net.ptcrys.blockoffensive.client.mvp.MvpLocalMusicManager;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -45,8 +45,8 @@ public class MvpMusicChunkS2CPacket {
                 buf.readByteArray(MAX_CHUNK_BYTES));
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
+    public void handle(Supplier<PayloadContext> ctxSup) {
+        PayloadContext ctx = ctxSup.get();
         ctx.enqueueWork(() -> MvpLocalMusicManager.onMusicChunk(mvpId, totalChunks, chunkIndex, data));
         ctx.setPacketHandled(true);
     }

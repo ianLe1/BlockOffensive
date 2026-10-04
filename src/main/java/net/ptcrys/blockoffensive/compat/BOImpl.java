@@ -1,6 +1,6 @@
 package net.ptcrys.blockoffensive.compat;
 
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 
 public class BOImpl {
 

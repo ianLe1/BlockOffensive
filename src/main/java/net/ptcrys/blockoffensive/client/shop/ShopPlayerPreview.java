@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.client.shop;
 
+import net.minecraft.client.resources.PlayerSkin;
 import net.ptcrys.fpsmatch.compat.LrtacticalCompat;
 import net.ptcrys.fpsmatch.compat.gun.GunCompatManager;
 import net.ptcrys.fpsmatch.compat.gun.GunTabTypeEnum;
@@ -19,7 +20,7 @@ import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 
 import com.mojang.authlib.GameProfile;
 
@@ -57,19 +58,10 @@ public final class ShopPlayerPreview extends RemotePlayer {
         }
     }
 
+    /** 1.21.1：皮肤/披风/模型三个访问器合并为 getSkin()（PlayerSkin record）。 */
     @Override
-    public ResourceLocation getSkinTextureLocation() {
-        return source.getSkinTextureLocation();
-    }
-
-    @Override
-    public String getModelName() {
-        return source.getModelName();
-    }
-
-    @Override
-    public ResourceLocation getCloakTextureLocation() {
-        return null;
+    public PlayerSkin getSkin() {
+        return source.getSkin();
     }
 
     @Override
@@ -110,7 +102,7 @@ public final class ShopPlayerPreview extends RemotePlayer {
         }
         tickCount = source.tickCount;
         // TaCZ treats this as a third-person entity, even while the live camera is first person.
-        InventoryScreen.renderEntityInInventoryFollowsAngle(graphics, x, y, scale, 0.9f, 0, this);
+        InventoryScreen.renderEntityInInventoryFollowsAngle(graphics, x - scale, y - scale, x + scale, y + scale, scale, 0.9f, 0f, 0f, this);
     }
 
     /** Called after player animation, before sleeves and held-item layers are rendered. */

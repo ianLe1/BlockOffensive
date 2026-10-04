@@ -1,5 +1,7 @@
 package net.ptcrys.blockoffensive.spectator;
 
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.entity.CompositionC4Entity;
 import net.ptcrys.blockoffensive.item.BOItemRegister;
@@ -12,6 +14,7 @@ import net.ptcrys.fpsmatch.common.client.spec.SpectateTarget;
 import net.ptcrys.fpsmatch.common.client.spec.SpectatorSwitchDirection;
 import net.ptcrys.fpsmatch.common.client.spec.SpectatorSwitchInputEvent;
 import net.ptcrys.fpsmatch.common.entity.MatchDropEntity;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import net.ptcrys.fpsmatch.common.packet.spec.SpectateModeS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.spec.SpectatorTargetS2CPacket;
 import net.ptcrys.fpsmatch.core.FPSMCore;
@@ -27,11 +30,10 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import com.mojang.logging.LogUtils;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +46,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME)
 public final class BOSpecManager {
 
     private static final Logger LOG = LogUtils.getLogger();
@@ -144,9 +146,9 @@ public final class BOSpecManager {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.side.isClient() || event.phase != TickEvent.Phase.END) return;
-        if (!(event.player instanceof ServerPlayer spectator)) return;
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity().level().isClientSide()) return;
+        if (!(event.getEntity() instanceof ServerPlayer spectator)) return;
         UUID id = spectator.getUUID();
         if (!spectator.isSpectator()) {
             clearSpectatorState(id);
@@ -296,13 +298,13 @@ public final class BOSpecManager {
 
     @OnlyIn(Dist.CLIENT)
     public static void requestKillCamFallback(@NotNull UUID killer) {
-        BlockOffensive.INSTANCE.sendToServer(new RequestKillCamFallbackC2SPacket(killer));
+        NetworkPacketRegister.sendToServer(new RequestKillCamFallbackC2SPacket(killer));
     }
 
     private record KillCamDeathContext(UUID killerId, String gameType, String mapName, long createdTick) {}
 
     @OnlyIn(Dist.CLIENT)
     public static void sendSwitchSpectate(SwitchSpectateC2SPacket.SwitchDirection direction) {
-        BlockOffensive.INSTANCE.sendToServer(new SwitchSpectateC2SPacket(direction));
+        NetworkPacketRegister.sendToServer(new SwitchSpectateC2SPacket(direction));
     }
 }

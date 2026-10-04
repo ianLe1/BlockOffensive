@@ -1,9 +1,9 @@
 package net.ptcrys.blockoffensive;
 
+import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.ptcrys.blockoffensive.command.CSCommand;
 import net.ptcrys.blockoffensive.compat.BOImpl;
-import net.ptcrys.blockoffensive.compat.CSGrenadeCompat;
-import net.ptcrys.blockoffensive.compat.PhysicsModCompat;
 import net.ptcrys.blockoffensive.entity.BOEntityRegister;
 import net.ptcrys.blockoffensive.intro.IntroSoundEvents;
 import net.ptcrys.blockoffensive.item.BOItemRegister;
@@ -21,19 +21,16 @@ import net.ptcrys.fpsmatch.compat.impl.FPSMImpl;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.event.lifecycle.InterModEnqueueEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 @Mod(BlockOffensive.MODID)
 public class BlockOffensive {
@@ -41,27 +38,21 @@ public class BlockOffensive {
     public static final String MODID = "blockoffensive";
     private static final NetworkPacketRegister PACKET_REGISTER = new NetworkPacketRegister(
             ResourceLocation.tryBuild(MODID, "main"), BOPacketRegistration.PROTOCOL_VERSION);
-    public static final SimpleChannel INSTANCE = PACKET_REGISTER.getChannel();
 
-    @SuppressWarnings("removal")
-    public BlockOffensive() {
-        this(FMLJavaModLoadingContext.get());
-    }
-
-    public BlockOffensive(FMLJavaModLoadingContext context) {
-        IEventBus modEventBus = context.getModEventBus();
+    public BlockOffensive(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::onRegisterPackets);
         // InterModEnqueueEvent 是 MOD 生命周期事件，只会在 mod 事件总线上触发，
-        // 必须通过 modEventBus.addListener 注册，而不是挂到游戏总线 MinecraftForge.EVENT_BUS。
+        // 必须通过 modEventBus.addListener 注册，而不是挂到游戏总线 NeoForge.EVENT_BUS。
         modEventBus.addListener(this::onEnqueue);
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
         BOItemRegister.ITEMS.register(modEventBus);
         BOItemRegister.TABS.register(modEventBus);
         BOEntityRegister.ENTITY_TYPES.register(modEventBus);
         BOSoundRegister.SOUNDS.register(modEventBus);
         IntroSoundEvents.SOUND_EVENTS.register(modEventBus);
-        context.registerConfig(ModConfig.Type.CLIENT, BOConfig.clientSpec);
-        context.registerConfig(ModConfig.Type.COMMON, BOConfig.commonSpec);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, BOConfig.clientSpec);
+        modContainer.registerConfig(ModConfig.Type.COMMON, BOConfig.commonSpec);
     }
 
     @SubscribeEvent
@@ -69,9 +60,16 @@ public class BlockOffensive {
         CSCommand.onRegisterCommands(event);
     }
 
-    private void commonSetup(final FMLCommonSetupEvent event) {
+    /**
+     * NeoForge 1.21：网络包注册迁移到 RegisterPayloadHandlersEvent（模组总线）。
+     * 注册器由事件提供，必须在注册任何包之前 bind。
+     */
+    private void onRegisterPackets(final RegisterPayloadHandlersEvent event) {
+        PACKET_REGISTER.bind(event.registrar(BOPacketRegistration.PROTOCOL_VERSION));
         BOPacketRegistration.register(PACKET_REGISTER);
+    }
 
+    private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             ColoredPlayerCapability.register();
 
@@ -111,17 +109,14 @@ public class BlockOffensive {
      * 由 {@code commonSetup} 在 enqueueWork 中调用，确保在主线程执行。
      */
     private static void registerCompat() {
-        // 物理模组兼容
-        if (BOImpl.isPhysicsModLoaded()) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PhysicsModCompat.init());
-        }
-        // CS Grenade 兼容
-        if (FPSMImpl.findCounterStrikeGrenadesMod()) {
-            CSGrenadeCompat.init();
-        }
+        // 1.21.1 移植：PhysicsMod / CS Grenade / HitIndication 兼容层已裁剪，
+        // 依赖模组不在本整合包内（上游调用点原本就裹在 isXxxLoaded() 守卫里）。见 PORT-NOTES.md。
     }
 
-    @SubscribeEvent
+    // 1.21.1: InterModEnqueueEvent 是 mod 总线事件（IModBusEvent）。本类在 :48 把 this
+    // 注册到游戏总线（NeoForge.EVENT_BUS.register(this)），NeoForge 会逐方法校验总线归属，
+    // 留着 @SubscribeEvent 会抛 "IModBusEvent events are not allowed on the common NeoForge bus"。
+    // 它本来就由 :47 的 modEventBus.addListener(this::onEnqueue) 登记，删注解行为等价。
     public void onEnqueue(final InterModEnqueueEvent event) {
         event.enqueueWork(() -> {
             if (FMLEnvironment.dist != Dist.CLIENT) {

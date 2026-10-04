@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.intro.net;
 
+import net.minecraft.network.chat.ComponentSerialization;
 import net.ptcrys.blockoffensive.intro.IntroPhase;
 import net.ptcrys.blockoffensive.intro.IntroSequence;
 import net.ptcrys.blockoffensive.intro.IntroTeamSide;
@@ -8,9 +9,9 @@ import net.ptcrys.blockoffensive.intro.client.IntroClientController;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.ptcrys.blockoffensive.net.ClientPacketExecutor;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,7 +174,7 @@ public class IntroSequenceS2CPacket {
         }
         ArrayList<ItemStack> heldItems = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            heldItems.add(buf.readItem());
+            heldItems.add(buf.readJsonWithCodec(ItemStack.CODEC));
         }
         long startGameTime = buf.readLong();
         return new IntroSequenceS2CPacket(sequenceId, gameType, mapName, phase, side, duration, preRoll, cinematicReadyAtTick, previewItemId, cameraStart, cameraEnd, cameraStartYaw, cameraStartPitch, cameraEndYaw, cameraEndPitch, players, heldItems, startGameTime);
@@ -209,18 +210,16 @@ public class IntroSequenceS2CPacket {
         }
         for (int i = 0; i < packet.players.size(); i++) {
             ItemStack stack = i < packet.heldItems.size() ? packet.heldItems.get(i) : ItemStack.EMPTY;
-            buf.writeItem(stack == null ? ItemStack.EMPTY : stack);
+            buf.writeJsonWithCodec(ItemStack.CODEC, stack == null ? ItemStack.EMPTY : stack);
         }
         buf.writeLong(packet.startGameTime);
     }
 
-    public static void handle(IntroSequenceS2CPacket packet, java.util.function.Supplier<NetworkEvent.Context> context) {
-        NetworkEvent.Context ctx = context.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> IntroClientController.accept(packet)));
-        ctx.setPacketHandled(true);
+    public static void handle(IntroSequenceS2CPacket packet, java.util.function.Supplier<PayloadContext> context) {
+        ClientPacketExecutor.execute(context, packet);
     }
 
-    public void handle(java.util.function.Supplier<NetworkEvent.Context> context) {
+    public void handle(java.util.function.Supplier<PayloadContext> context) {
         handle(this, context);
     }
 

@@ -5,7 +5,7 @@ import net.ptcrys.blockoffensive.map.CSGameMap;
 import net.ptcrys.fpsmatch.core.team.ServerTeam;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 public class CSGameMapEvent extends Event {
 

@@ -1,20 +1,22 @@
 package net.ptcrys.blockoffensive.client.mvp;
 
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.ptcrys.blockoffensive.data.MvpReason;
 import net.ptcrys.blockoffensive.net.mvp.MvpMusicChunkS2CPacket;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLPaths;
 
 import com.google.gson.Gson;
-import com.mojang.blaze3d.audio.OggAudioStream;
+import net.minecraft.client.sounds.JOrbisAudioStream;
 import com.mojang.blaze3d.audio.SoundBuffer;
 import com.mojang.logging.LogUtils;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import org.slf4j.Logger;
 
 import java.io.InputStream;
@@ -38,7 +40,7 @@ import javax.sound.sampled.AudioFormat;
  * 安装：魔数检测真实格式 → 时长校验（&gt;15 秒拒绝）→ OGG 直拷 / MP3/WAV 转码 → 更新元数据 JSON。
  */
 @OnlyIn(Dist.CLIENT)
-@Mod.EventBusSubscriber(value = Dist.CLIENT)
+@EventBusSubscriber(value = Dist.CLIENT)
 public final class MvpLocalMusicManager {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -198,7 +200,7 @@ public final class MvpLocalMusicManager {
                     int from = i * chunkSize;
                     int to = Math.min(data.length, from + chunkSize);
                     byte[] chunk = java.util.Arrays.copyOfRange(data, from, to);
-                    net.ptcrys.blockoffensive.BlockOffensive.INSTANCE.sendToServer(
+                    NetworkPacketRegister.sendToServer(
                             new net.ptcrys.blockoffensive.net.mvp.MvpMusicUploadC2SPacket(
                                     playerId, total, i, chunk, uploadName));
                 }
@@ -232,7 +234,7 @@ public final class MvpLocalMusicManager {
         final boolean temporaryFile = file.getFileName().toString().startsWith("received-");
         AUDIO_EXECUTOR.execute(() -> {
             try (InputStream in = Files.newInputStream(file);
-                    OggAudioStream ogg = new OggAudioStream(in)) {
+                    JOrbisAudioStream ogg = new JOrbisAudioStream(in)) {
                 ByteBuffer pcm = ogg.readAll();
                 AudioFormat format = ogg.getFormat();
                 Minecraft.getInstance().execute(() -> startPlayback(file, generation, pcm, format));
@@ -333,11 +335,8 @@ public final class MvpLocalMusicManager {
 
     /** 客户端 tick：播放结束后释放资源，防止泄漏；MVP 分发等待窗口超时后回退本地音乐。 */
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-        PlaybackState playback = currentPlayback;
+    public static void onClientTick(ClientTickEvent.Post event) {
+                PlaybackState playback = currentPlayback;
         if (playback != null && playback.handle != null && playback.handle.isStopped()) {
             stop();
         }

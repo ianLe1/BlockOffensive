@@ -1,14 +1,15 @@
 package net.ptcrys.blockoffensive.net.shop;
 
+import net.minecraft.network.chat.ComponentSerialization;
 import net.ptcrys.blockoffensive.client.shop.ShopDropClientState;
 import net.ptcrys.blockoffensive.server.shop.ShopDropPickupService;
 import net.ptcrys.fpsmatch.common.drop.DropType;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.ptcrys.blockoffensive.net.ClientPacketExecutor;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ public record ShopNearbyDropsS2CPacket(long requestId, List<Drop> drops) {
         buffer.writeVarInt(packet.drops().size());
         for (Drop drop : packet.drops()) {
             buffer.writeUUID(drop.entityId());
-            buffer.writeItem(drop.stack());
+            buffer.writeJsonWithCodec(ItemStack.CODEC, drop.stack());
             buffer.writeEnum(drop.type());
             buffer.writeDouble(drop.x());
             buffer.writeDouble(drop.y());
@@ -62,7 +63,7 @@ public record ShopNearbyDropsS2CPacket(long requestId, List<Drop> drops) {
         for (int i = 0; i < size; i++) {
             drops.add(new Drop(
                     buffer.readUUID(),
-                    buffer.readItem(),
+                    buffer.readJsonWithCodec(ItemStack.CODEC),
                     buffer.readEnum(DropType.class),
                     buffer.readDouble(),
                     buffer.readDouble(),
@@ -72,11 +73,8 @@ public record ShopNearbyDropsS2CPacket(long requestId, List<Drop> drops) {
         return new ShopNearbyDropsS2CPacket(requestId, drops);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT, () -> () -> ShopDropClientState.acceptNearby(this)));
-        context.setPacketHandled(true);
+    public void handle(Supplier<PayloadContext> contextSupplier) {
+        ClientPacketExecutor.execute(contextSupplier, this);
     }
 
     public record Drop(UUID entityId, ItemStack stack, DropType type,

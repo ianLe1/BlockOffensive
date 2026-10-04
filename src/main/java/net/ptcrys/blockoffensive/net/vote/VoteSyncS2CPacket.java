@@ -3,9 +3,9 @@ package net.ptcrys.blockoffensive.net.vote;
 import net.ptcrys.blockoffensive.client.screen.hud.CSVoteHud;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.ptcrys.blockoffensive.net.ClientPacketExecutor;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -43,8 +43,7 @@ public record VoteSyncS2CPacket(boolean active, String titleKey, int remainingSe
                 buf.readVarInt());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> CSVoteHud.getInstance().accept(this)));
-        ctx.get().setPacketHandled(true);
+    public void handle(Supplier<PayloadContext> ctx) {
+        ClientPacketExecutor.execute(ctx, this);
     }
 }

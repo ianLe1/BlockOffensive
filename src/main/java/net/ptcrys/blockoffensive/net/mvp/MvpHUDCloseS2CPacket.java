@@ -4,7 +4,7 @@ import net.ptcrys.blockoffensive.client.screen.hud.CSGameHud;
 import net.ptcrys.blockoffensive.client.spec.KillCamManager;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -18,7 +18,7 @@ public class MvpHUDCloseS2CPacket {
         return new MvpHUDCloseS2CPacket();
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(Supplier<PayloadContext> ctx) {
         ctx.get().enqueueWork(() -> {
             CSGameHud.getInstance().getMvpHud().triggerCloseAnimation();
             // 新回合开始：清理 KillCam 残留视角/灰度，防止回合切换时的相机残留

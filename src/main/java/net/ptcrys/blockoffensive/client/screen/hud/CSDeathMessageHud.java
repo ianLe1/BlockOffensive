@@ -3,7 +3,6 @@ package net.ptcrys.blockoffensive.client.screen.hud;
 import net.ptcrys.blockoffensive.BOConfig;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.compat.BOImpl;
-import net.ptcrys.blockoffensive.compat.CSGrenadeCompat;
 import net.ptcrys.blockoffensive.data.DeathMessage;
 import net.ptcrys.blockoffensive.data.DeathMessageRules;
 import net.ptcrys.blockoffensive.item.BOItemRegister;
@@ -19,7 +18,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 
@@ -59,17 +58,14 @@ public class CSDeathMessageHud {
         registerSpecialKillIcon("fly", ResourceLocation.tryBuild(BlockOffensive.MODID, "textures/ui/cs/message/fly.png"));
         registerSpecialKillIcon("hand", ResourceLocation.tryBuild(BlockOffensive.MODID, "textures/ui/cs/message/hand.png"));
 
-        registerSpecialKillIcon(ForgeRegistries.ITEMS.getKey(Items.AIR), "hand");
-        registerSpecialKillIcon(ForgeRegistries.ITEMS.getKey(FPSMItemRegister.CT_INCENDIARY_GRENADE.get()), "ct_incendiary_grenade");
-        registerSpecialKillIcon(ForgeRegistries.ITEMS.getKey(FPSMItemRegister.T_INCENDIARY_GRENADE.get()), "t_incendiary_grenade");
-        registerSpecialKillIcon(ForgeRegistries.ITEMS.getKey(FPSMItemRegister.GRENADE.get()), "grenade");
-        registerSpecialKillIcon(ForgeRegistries.ITEMS.getKey(FPSMItemRegister.FLASH_BOMB.get()), "flash_bomb");
-        registerSpecialKillIcon(ForgeRegistries.ITEMS.getKey(FPSMItemRegister.SMOKE_SHELL.get()), "smoke_shell");
-        registerSpecialKillIcon(ForgeRegistries.ITEMS.getKey(BOItemRegister.C4.get()), "explode");
+        registerSpecialKillIcon(BuiltInRegistries.ITEM.getKey(Items.AIR), "hand");
+        registerSpecialKillIcon(BuiltInRegistries.ITEM.getKey(FPSMItemRegister.CT_INCENDIARY_GRENADE.get()), "ct_incendiary_grenade");
+        registerSpecialKillIcon(BuiltInRegistries.ITEM.getKey(FPSMItemRegister.T_INCENDIARY_GRENADE.get()), "t_incendiary_grenade");
+        registerSpecialKillIcon(BuiltInRegistries.ITEM.getKey(FPSMItemRegister.GRENADE.get()), "grenade");
+        registerSpecialKillIcon(BuiltInRegistries.ITEM.getKey(FPSMItemRegister.FLASH_BOMB.get()), "flash_bomb");
+        registerSpecialKillIcon(BuiltInRegistries.ITEM.getKey(FPSMItemRegister.SMOKE_SHELL.get()), "smoke_shell");
+        registerSpecialKillIcon(BuiltInRegistries.ITEM.getKey(BOItemRegister.C4.get()), "explode");
 
-        if (BOImpl.isCounterStrikeGrenadesLoaded()) {
-            CSGrenadeCompat.registerKillIcon(itemToIcon);
-        }
     }
 
     public void render(GuiGraphics guiGraphics) {

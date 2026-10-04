@@ -3,7 +3,7 @@ package net.ptcrys.blockoffensive.net;
 import net.ptcrys.fpsmatch.common.client.FPSMClient;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -18,7 +18,7 @@ public record CSTabRemovalS2CPacket(UUID uuid) {
         return new CSTabRemovalS2CPacket(buf.readUUID());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(Supplier<PayloadContext> ctx) {
         ctx.get().enqueueWork(() -> {
             FPSMClient.getGlobalData().getTeamByUUID(uuid).ifPresent(team -> {
                 team.delPlayer(uuid);

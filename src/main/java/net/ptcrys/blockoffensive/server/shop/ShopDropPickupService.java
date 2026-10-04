@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.server.shop;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.mixin.ItemEntityPickupAccessor;
 import net.ptcrys.blockoffensive.mixin.MatchDropPickupAccessor;
@@ -12,9 +13,9 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,7 +35,7 @@ import java.util.function.Predicate;
  * inventory mutation are all read and performed on the server thread.
  * </p>
  */
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BlockOffensive.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ShopDropPickupService {
 
     public static final double DEFAULT_RADIUS = 8.0D;
@@ -225,7 +226,7 @@ public final class ShopDropPickupService {
         for (ItemStack slot : inventory.items) {
             if (slot.isEmpty()) {
                 remaining -= maxStack;
-            } else if (ItemStack.isSameItemSameTags(slot, stack)) {
+            } else if (ItemStack.isSameItemSameComponents(slot, stack)) {
                 remaining -= Math.max(0, slot.getMaxStackSize() - slot.getCount());
             }
             if (remaining <= 0) {

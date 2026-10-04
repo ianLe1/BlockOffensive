@@ -1,5 +1,7 @@
 package net.ptcrys.blockoffensive.gametest;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 import net.ptcrys.blockoffensive.map.CSGameMap;
 import net.ptcrys.blockoffensive.map.shop.ItemType;
 import net.ptcrys.fpsmatch.common.capability.team.ShopCapability;
@@ -17,10 +19,10 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.authlib.GameProfile;
@@ -50,8 +52,8 @@ public final class ShopRefundGameTests {
             legacy.setDefaultShopDataItemStack(ItemType.EQUIPMENT.name(), 0, new ItemStack(Items.APPLE));
             legacy.setDefaultShopDataCost(ItemType.EQUIPMENT.name(), 0, 100);
             legacy.addArea(new AreaData(BlockPos.ZERO, new BlockPos(8, 8, 8)));
-            var saved = legacy.codec.encodeStart(JsonOps.INSTANCE, legacy).getOrThrow(false, message -> {});
-            var decoded = legacy.codec.parse(JsonOps.INSTANCE, saved).getOrThrow(false, message -> {});
+            var saved = legacy.codec.encodeStart(JsonOps.INSTANCE, legacy).getOrThrow(message -> new IllegalStateException(message));
+            var decoded = legacy.codec.parse(JsonOps.INSTANCE, saved).getOrThrow(message -> new IllegalStateException(message));
 
             for (var team : List.of(map.getCT(), map.getT())) {
                 ShopCapability cap = team.getCapabilityMap().get(ShopCapability.class).orElseThrow();
@@ -163,9 +165,9 @@ public final class ShopRefundGameTests {
     @GameTest(template = "empty")
     public static void sameNameDifferentItemsKeepTheirSlots(GameTestHelper helper) {
         ItemStack apple = new ItemStack(Items.APPLE);
-        apple.setHoverName(Component.literal("Same name"));
+        apple.set(DataComponents.CUSTOM_NAME, Component.literal("Same name"));
         ItemStack diamond = new ItemStack(Items.DIAMOND);
-        diamond.setHoverName(Component.literal("Same name"));
+        diamond.set(DataComponents.CUSTOM_NAME, Component.literal("Same name"));
         ShopSlot appleSlot = new ShopSlot(apple, 100);
         ShopSlot diamondSlot = new ShopSlot(diamond, 100);
         ShopData<ItemType> data = shopData(800, appleSlot, diamondSlot);

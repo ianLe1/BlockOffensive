@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.gametest;
 
+import net.minecraft.server.network.CommonListenerCookie;
 import net.ptcrys.blockoffensive.map.CSDeathMatchMap;
 import net.ptcrys.blockoffensive.map.CSGameEvents;
 import net.ptcrys.fpsmatch.FPSMatch;
@@ -10,6 +11,7 @@ import net.ptcrys.fpsmatch.common.event.FPSMEventHook;
 import net.ptcrys.fpsmatch.common.event.FPSMapEvent;
 import net.ptcrys.fpsmatch.common.packet.FPSMatchGameTypeS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.FPSMatchStatsResetS2CPacket;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import net.ptcrys.fpsmatch.common.packet.team.FPSMAddTeamS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.team.TeamPlayerStatsS2CPacket;
 import net.ptcrys.fpsmatch.core.data.AreaData;
@@ -24,7 +26,7 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.Entity;
@@ -32,14 +34,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.BusBuilder;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
-import net.minecraftforge.network.NetworkDirection;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.BusBuilder;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.ptcrys.fpsmatch.common.packet.register.ReflectivePayload;
 
 import com.mojang.authlib.GameProfile;
 
@@ -78,7 +80,7 @@ public final class DeathmatchLifecycleGameTests {
             helper.assertTrue(fixture.map.checkSpecHasPlayer(spectator), "the requested spectator team is preserved");
             helper.assertTrue(spectator.isSpectator(), "mid-match spectators remain in spectator mode");
             helper.assertTrue(fixture.map.getDMPlayerData(spectator.getUUID()).isEmpty(), "joining as a spectator does not respawn");
-            MinecraftForge.EVENT_BUS.post(new FPSMapEvent.PlayerEvent.LoggedInEvent(fixture.map, spectator));
+            NeoForge.EVENT_BUS.post(new FPSMapEvent.PlayerEvent.LoggedInEvent(fixture.map, spectator));
             fixture.map.respawnPlayer(spectator);
             fixture.map.handleDeath(new DeathContext(spectator, null, spectator.damageSources().generic(), ItemStack.EMPTY, helper.getLevel().getGameTime()));
             helper.assertTrue(spectator.isSpectator(), "reconnect and respawn callbacks keep observers out of combat");
@@ -97,7 +99,7 @@ public final class DeathmatchLifecycleGameTests {
             PlayerData data = fixture.map.getMapTeams().getPlayerData(player).orElseThrow();
             data.addScore(18);
             data.addKill();
-            MinecraftForge.EVENT_BUS.post(new FPSMapEvent.PlayerEvent.LoggedOutEvent(fixture.map, player));
+            NeoForge.EVENT_BUS.post(new FPSMapEvent.PlayerEvent.LoggedOutEvent(fixture.map, player));
             player.setPos(player.position().add(20, 0, 0));
             login(player);
             helper.assertTrue(!player.isSpectator() && data.isLiving(), "reconnecting players immediately re-enter deathmatch");
@@ -203,26 +205,25 @@ public final class DeathmatchLifecycleGameTests {
             fixture.addSpawnPoint();
             FakePlayer player = fixture.join("ct");
             helper.assertTrue(fixture.map.start(), "match starts");
-            List<Integer> packets = new ArrayList<>();
+            List<Class<?>> packets = new ArrayList<>();
             Connection connection = new Connection(PacketFlow.SERVERBOUND) {
 
                 @Override
                 public void send(Packet<?> packet) {
-                    if (packet instanceof ClientboundCustomPayloadPacket payload && payload.getIdentifier().toString().equals("fpsmatch:main")) {
-                        FriendlyByteBuf data = new FriendlyByteBuf(payload.getData().copy());
-                        try {
-                            packets.add(data.readVarInt());
-                        } finally {
-                            data.release();
-                        }
+                    // 1.21.1：SimpleChannel 的「单通道 + varint 鉴别码」换成了 per-payload 类型，
+                    // 所以直接记录载荷承载的上游包类（ReflectivePayload.body()）来判定顺序。
+                    if (packet instanceof ClientboundCustomPayloadPacket wrapped
+                            && wrapped.payload() instanceof ReflectivePayload reflective) {
+                        packets.add(reflective.body().getClass());
                     }
                 }
             };
-            player.connection = new ServerGamePacketListenerImpl(helper.getLevel().getServer(), connection, player);
-            int resetType = packetType(new FPSMatchStatsResetS2CPacket());
-            int mapType = packetType(new FPSMatchGameTypeS2CPacket(fixture.map.getMapName(), "csdm", false, false));
-            int teamType = packetType(FPSMAddTeamS2CPacket.of(fixture.map.getCT()));
-            int statsType = packetType(TeamPlayerStatsS2CPacket.of(fixture.map.getCT(), fixture.map.getMapTeams().getPlayerData(player).orElseThrow()));
+            player.connection = new ServerGamePacketListenerImpl(helper.getLevel().getServer(), connection, player,
+                    CommonListenerCookie.createInitial(player.getGameProfile(), false));
+            Class<?> resetType = packetType(new FPSMatchStatsResetS2CPacket());
+            Class<?> mapType = packetType(new FPSMatchGameTypeS2CPacket(fixture.map.getMapName(), "csdm", false, false));
+            Class<?> teamType = packetType(FPSMAddTeamS2CPacket.of(fixture.map.getCT()));
+            Class<?> statsType = packetType(TeamPlayerStatsS2CPacket.of(fixture.map.getCT(), fixture.map.getMapTeams().getPlayerData(player).orElseThrow()));
             login(player);
             int resetIndex = packets.lastIndexOf(resetType);
             helper.assertTrue(resetIndex >= 0, "the full login chain includes the client reset");
@@ -241,14 +242,9 @@ public final class DeathmatchLifecycleGameTests {
         bus.post(new PlayerEvent.PlayerLoggedInEvent(player));
     }
 
-    private static int packetType(Object message) {
-        ClientboundCustomPayloadPacket packet = (ClientboundCustomPayloadPacket) FPSMatch.INSTANCE.toVanillaPacket(message, NetworkDirection.PLAY_TO_CLIENT);
-        FriendlyByteBuf data = new FriendlyByteBuf(packet.getData().copy());
-        try {
-            return data.readVarInt();
-        } finally {
-            data.release();
-        }
+    /** 1.21.1：没有 FPSMatch.INSTANCE.toVanillaPacket，也不需要——直接比包类。 */
+    private static Class<?> packetType(Object message) {
+        return message.getClass();
     }
 
     private static final class Fixture implements AutoCloseable {

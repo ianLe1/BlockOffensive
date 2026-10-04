@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.UUID;
 
@@ -41,7 +41,7 @@ public class DeathMessage {
         this.dead = builder.dead;
         this.deadUUID = builder.deadUUID;
         this.weapon = builder.weapon;
-        this.itemRL = ForgeRegistries.ITEMS.getKey(this.weapon.getItem());
+        this.itemRL = BuiltInRegistries.ITEM.getKey(this.weapon.getItem());
         this.arg = builder.arg;
         this.isHeadShot = builder.isHeadShot;
         this.isBlinded = builder.isBlinded;
@@ -92,7 +92,7 @@ public class DeathMessage {
         public void setBlinded(Player killer) {
             if (deadUUID.equals(this.killerUUID)) return;
 
-            if (killer.hasEffect(FPSMEffectRegister.FLASH_BLINDNESS.get()) || killer.hasEffect(MobEffects.BLINDNESS) || killer.hasEffect(MobEffects.DARKNESS)) {
+            if (killer.hasEffect(FPSMEffectRegister.FLASH_BLINDNESS) || killer.hasEffect(MobEffects.BLINDNESS) || killer.hasEffect(MobEffects.DARKNESS)) {
                 this.isBlinded = true;
             } else {
                 if (FPSMImpl.findCounterStrikeGrenadesMod()) {

@@ -114,7 +114,7 @@ public final class CSGameShopScreen extends ModernScreen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, 0xA5101010);
         graphics.fillGradient(0, 0, width, height, 0x10000000, 0x48000000);
         if (playerPreview == null || minecraft == null || minecraft.player == null) return;
@@ -339,7 +339,7 @@ public final class CSGameShopScreen extends ModernScreen {
     }
 
     private void transmitShopAction(long id, PendingShopAction pending) {
-        NetworkPacketRegister.getChannelFromCache(ShopActionC2SPacket.class).sendToServer(new ShopActionC2SPacket(
+        NetworkPacketRegister.sendToServer(new ShopActionC2SPacket(
                 id, FPSMClient.getGlobalData().getCurrentMap(), pending.type(), pending.index(), pending.action()));
     }
 

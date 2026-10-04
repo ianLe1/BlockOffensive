@@ -6,10 +6,11 @@ import net.ptcrys.fpsmatch.common.client.FPSMClient;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.api.distmarker.Dist;
+import net.ptcrys.blockoffensive.net.ClientPacketExecutor;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
@@ -23,8 +24,7 @@ public record CSScoreboardSync(String map, int[] rounds, int halfRounds,
 
     public static void send(ServerPlayer player, String map, int[] rounds, int halfRounds,
                             int elapsedSeconds, int ctLoss, int tLoss) {
-        BlockOffensive.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player),
-                new CSScoreboardSync(map, rounds, halfRounds, elapsedSeconds, ctLoss, tLoss));
+        NetworkPacketRegister.sendToPlayer(player, new CSScoreboardSync(map, rounds, halfRounds, elapsedSeconds, ctLoss, tLoss));
     }
 
     public static void encode(CSScoreboardSync packet, FriendlyByteBuf buf) {
@@ -41,13 +41,11 @@ public record CSScoreboardSync(String map, int[] rounds, int halfRounds,
                 buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> supplier) {
-        var context = supplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> this::apply));
-        context.setPacketHandled(true);
+    public void handle(Supplier<PayloadContext> supplier) {
+        ClientPacketExecutor.execute(supplier, this);
     }
 
-    private void apply() {
+    public void apply() {
         if (!FPSMClient.getGlobalData().isCurrentGameType("cs") || !map.equals(FPSMClient.getGlobalData().getCurrentMap())) return;
         CSClientData.scoreboardRounds = rounds.clone();
         CSClientData.scoreboardHalfRounds = Math.max(1, halfRounds);

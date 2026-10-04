@@ -4,15 +4,12 @@ import net.ptcrys.blockoffensive.BOConfig;
 import net.ptcrys.blockoffensive.client.data.WeaponData;
 import net.ptcrys.blockoffensive.command.BOTaczLiveFireDebugCommand;
 import net.ptcrys.blockoffensive.compat.BOImpl;
-import net.ptcrys.blockoffensive.compat.CSGrenadeCompat;
 import net.ptcrys.blockoffensive.entity.CompositionC4Entity;
 import net.ptcrys.blockoffensive.item.BOItemRegister;
 import net.ptcrys.blockoffensive.item.CompositionC4;
 import net.ptcrys.blockoffensive.map.team.capability.ColoredPlayerCapability;
 import net.ptcrys.blockoffensive.net.CSGameSettingsS2CPacket;
 import net.ptcrys.blockoffensive.net.DeathMessageS2CPacket;
-import net.ptcrys.blockoffensive.net.PxDeathCompatS2CPacket;
-import net.ptcrys.blockoffensive.net.PxRagdollRemovalCompatS2CPacket;
 import net.ptcrys.blockoffensive.net.shop.ShopStatesS2CPacket;
 import net.ptcrys.blockoffensive.net.spec.CSGameWeaponDataS2CPacket;
 import net.ptcrys.blockoffensive.sound.BOSoundRegister;
@@ -28,6 +25,7 @@ import net.ptcrys.fpsmatch.common.drop.DropType;
 import net.ptcrys.fpsmatch.common.entity.MatchDropEntity;
 import net.ptcrys.fpsmatch.common.packet.FPSMSoundPlayS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.FPSMatchStatsResetS2CPacket;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import net.ptcrys.fpsmatch.compat.LrtacticalCompat;
 import net.ptcrys.fpsmatch.compat.gun.GunCompatManager;
 import net.ptcrys.fpsmatch.compat.gun.GunTabTypeEnum;
@@ -66,9 +64,9 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Team;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.tacz.guns.entity.EntityKineticBullet;
 import org.jetbrains.annotations.NotNull;
@@ -249,7 +247,7 @@ public abstract class CSMap extends BaseRoundMap<String, CSRoundResultReason> {
      * 判断实体是否需要被清理
      */
     public boolean shouldDiscardEntity(Entity entity) {
-        return entity instanceof ItemEntity || entity instanceof CompositionC4Entity || entity instanceof MatchDropEntity || entity instanceof EntityKineticBullet || (FPSMImpl.findCounterStrikeGrenadesMod() && CSGrenadeCompat.is(entity));
+        return entity instanceof ItemEntity || entity instanceof CompositionC4Entity || entity instanceof MatchDropEntity || entity instanceof EntityKineticBullet;
     }
 
     /**
@@ -266,15 +264,11 @@ public abstract class CSMap extends BaseRoundMap<String, CSRoundResultReason> {
      * 发送物理模组兼容包
      */
     public void sendPhysicsRagdollRemovalPacket(UUID uuid) {
-        if (ModList.get().isLoaded("physicsmod")) {
-            sendPacketToAllPlayer(new PxRagdollRemovalCompatS2CPacket(uuid));
-        }
+        // 1.21.1 移植：PhysicsMod 兼容层已裁剪，见 PORT-NOTES.md。
     }
 
     protected void sendPhysicsDeathPacket(ServerPlayer deadPlayer) {
-        if (BOImpl.isPhysicsModLoaded()) {
-            this.sendPacketToAllPlayer(new PxDeathCompatS2CPacket(deadPlayer.getId()));
-        }
+        // 1.21.1 移植：PhysicsMod 兼容层已裁剪，见 PORT-NOTES.md。
     }
 
     protected boolean shouldSendPhysicsDeathPacketInBaseDeathHandler(DeathContext context) {
@@ -742,7 +736,7 @@ public abstract class CSMap extends BaseRoundMap<String, CSRoundResultReason> {
 
     public void resetPlayerClientData(ServerPlayer serverPlayer) {
         FPSMatchStatsResetS2CPacket packet = new FPSMatchStatsResetS2CPacket();
-        FPSMatch.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
+        NetworkPacketRegister.sendToPlayer(serverPlayer, packet);
     }
 
     public void sendAllPlayerMessage(Component message, boolean actionBar) {
@@ -842,7 +836,7 @@ public abstract class CSMap extends BaseRoundMap<String, CSRoundResultReason> {
                     for (DropType dropType : DropType.values()) {
                         if (dropType.itemMatch().test(itemStack)) {
                             weaponData.computeIfAbsent(dropType.name(), k -> new ArrayList<>()).add(itemStack.getHoverName().getString());
-                            ResourceLocation regId = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(itemStack.getItem());
+                            ResourceLocation regId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(itemStack.getItem());
                             if (GunCompatManager.isGun(itemStack)) {
                                 itemIds.computeIfAbsent(dropType.name(), k -> new ArrayList<>()).add(GunCompatManager.findProvider(itemStack).getGunId(itemStack));
                             } else {
@@ -859,7 +853,7 @@ public abstract class CSMap extends BaseRoundMap<String, CSRoundResultReason> {
             if (GunCompatManager.isGun(mainHand)) {
                 itemIds.computeIfAbsent("CARRIED", k -> new ArrayList<>()).add(GunCompatManager.findProvider(mainHand).getGunId(mainHand));
             } else {
-                ResourceLocation carriedId = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(mainHand.getItem());
+                ResourceLocation carriedId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(mainHand.getItem());
                 itemIds.computeIfAbsent("CARRIED", k -> new ArrayList<>()).add(carriedId);
             }
 

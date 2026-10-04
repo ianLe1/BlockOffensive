@@ -1,5 +1,6 @@
 package net.ptcrys.blockoffensive.map;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.ptcrys.blockoffensive.BOConfig;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.data.CSScoreboardHistory;
@@ -19,7 +20,6 @@ import net.ptcrys.blockoffensive.mvp.CSMvpScorer;
 import net.ptcrys.blockoffensive.net.CSGameSettingsS2CPacket;
 import net.ptcrys.blockoffensive.net.CSScoreboardSync;
 import net.ptcrys.blockoffensive.net.CSTabRemovalS2CPacket;
-import net.ptcrys.blockoffensive.net.PxRagdollRemovalCompatS2CPacket;
 import net.ptcrys.blockoffensive.net.bomb.BombDemolitionProgressS2CPacket;
 import net.ptcrys.blockoffensive.net.mvp.MvpHUDCloseS2CPacket;
 import net.ptcrys.blockoffensive.net.mvp.MvpMessageS2CPacket;
@@ -40,6 +40,7 @@ import net.ptcrys.fpsmatch.common.drop.DropType;
 import net.ptcrys.fpsmatch.common.packet.FPSMSoundPlayS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.FPSMusicPlayS2CPacket;
 import net.ptcrys.fpsmatch.common.packet.FPSMusicStopS2CPacket;
+import net.ptcrys.fpsmatch.common.packet.register.NetworkPacketRegister;
 import net.ptcrys.fpsmatch.compat.gun.GunTabTypeEnum;
 import net.ptcrys.fpsmatch.core.FPSMCore;
 import net.ptcrys.fpsmatch.core.capability.CapabilityMap;
@@ -86,10 +87,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.Team;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -106,7 +107,9 @@ import java.util.function.Function;
  * 反恐精英（CS）模式地图核心逻辑类
  * 管理回合制战斗、炸弹逻辑、商店系统、队伍经济、玩家装备等核心机制
  */
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+// 1.21.1: 该类自身没有任何 @SubscribeEvent，保留 @EventBusSubscriber 会让
+// AutomaticEventSubscriber 抛 "has no @SubscribeEvent methods, but register was called anyway"。
+// 父类链（CSMap -> BaseRoundMap -> BaseMap）也都没有订阅，删注解无副作用。
 public class CSGameMap extends CSMap {
 
     private final CSScoreboardHistory scoreboardHistory = new CSScoreboardHistory();
@@ -799,7 +802,7 @@ public class CSGameMap extends CSMap {
 
     @Override
     public int getRewardByItem(ItemStack itemStack) {
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         if (itemId != null && itemId.getPath().toLowerCase(Locale.ROOT).contains("zeus")) {
             return sniperKillEconomy.get();
         }
@@ -837,7 +840,7 @@ public class CSGameMap extends CSMap {
 
         sendPacketToAllPlayer(new MvpMessageS2CPacket(mvpReason));
         sendMvpMusicPacket(mvpReason);
-        MinecraftForge.EVENT_BUS.post(new CSGameRoundEndEvent(this, winnerTeam, reason));
+        NeoForge.EVENT_BUS.post(new CSGameRoundEndEvent(this, winnerTeam, reason));
 
         processRoundScoreAndOvertimeVote(winnerTeam);
 
@@ -1102,7 +1105,7 @@ public class CSGameMap extends CSMap {
 
         MvpReason mvpReason = buildMvpReason(rawMvpData.uuid(), winnerTeam, playerName, reasonKey, infoKey, musicName);
         getPlayerByUUID(rawMvpData.uuid())
-                .ifPresent(player -> MinecraftForge.EVENT_BUS.post(new CSGamePlayerGetMvpEvent(player, this, mvpReason)));
+                .ifPresent(player -> NeoForge.EVENT_BUS.post(new CSGamePlayerGetMvpEvent(player, this, mvpReason)));
         return mvpReason;
     }
 
@@ -1390,7 +1393,6 @@ public class CSGameMap extends CSMap {
         int ctScore = getCT().getScores();
         int tScore = getT().getScores();
 
-        sendPhysicsRagdollRemovalPacket(PxRagdollRemovalCompatS2CPacket.ALL);
         cleanupSpecificEntities();
         notifySpectatorsOfBombFuse();
 
@@ -1414,9 +1416,7 @@ public class CSGameMap extends CSMap {
         BombFuseS2CPacket fusePacket = new BombFuseS2CPacket(initialFuse, maxFuseTime);
 
         getMapTeams().getSpecPlayers().forEach(pUUID -> FPSMCore.getInstance().getPlayerByUUID(pUUID)
-                .ifPresent(player -> BlockOffensive.INSTANCE.send(
-                        PacketDistributor.PLAYER.with(() -> player),
-                        fusePacket)));
+                .ifPresent(player -> NetworkPacketRegister.sendToPlayer(player, fusePacket)));
     }
 
     private void pause() {
@@ -1761,7 +1761,7 @@ public class CSGameMap extends CSMap {
         super.switchTeams();
         IntroRuntimeController.markSwitchPending(this);
         scoreboardHistory.switchSides();
-        MinecraftForge.EVENT_BUS.post(new CSGameMapEvent.TeamSwitchEvent(this));
+        NeoForge.EVENT_BUS.post(new CSGameMapEvent.TeamSwitchEvent(this));
     }
 
     public boolean checkCanPlacingBombs(String team) {

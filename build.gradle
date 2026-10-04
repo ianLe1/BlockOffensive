@@ -1,97 +1,95 @@
 plugins {
     id 'java-library'
-    id 'eclipse'
-    id 'idea'
-    id 'maven-publish'
-    alias libs.plugins.modDevGradleLegacy
-    alias libs.plugins.kotlinDevGradleLegacy
-    alias libs.plugins.lombokLegacy
-    alias libs.plugins.kotlinLombokLegacy
-    alias libs.plugins.spotless
+    id 'net.neoforged.moddev' version '2.0.148'
 }
 
-allprojects {
-    group = 'net.ptcrys'
-}
-
-def isRelease = System.getenv('RELEASE_BUILD') == 'true'
-def buildDate = new Date()
-def year = String.format('%ty', buildDate)
-def month = buildDate.month + 1
-def day = buildDate.date
-def dynamicVersion
-if (isRelease) {
-    dynamicVersion = "${mod_major_version}.${year}.${month}.${day}"
-} else {
-    dynamicVersion = "${mod_major_version}.${year}.${month}-SNAPSHOT"
-}
-ext.mod_version = dynamicVersion
-version = dynamicVersion
-group = mod_group_id
-
-tasks.named('wrapper', Wrapper).configure {
-    distributionType = Wrapper.DistributionType.BIN
-}
+group = 'net.ptcrys'
+version = '1.1-1.21.1-port'
+base { archivesName = 'blockoffensive' }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
 
-apply from: "$projectDir/gradle/scripts/moddevgradle.gradle"
-apply from: "$projectDir/dependencies.gradle"
-apply from: "$projectDir/gradle/scripts/resources.gradle"
-apply from: "$projectDir/gradle/scripts/jars.gradle"
-apply from: "$projectDir/gradle/scripts/repositories.gradle"
-apply from: "$projectDir/gradle/scripts/spotless.gradle"
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.neoforged.net/releases' }
+}
 
-generateModMetadata.doFirst {
-    mkdir('run/client')
-    mkdir('run/server')
-    mkdir('run/clientData')
-    mkdir('run/serverTest')
+neoForge {
+    version = '21.1.253'
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('run/client')
+        }
+        server {
+            server()
+            gameDirectory = project.file('run/server')
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        blockoffensive {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    // 1.21.1 本地生产 mod jar（与 fpsmatch-port 共用一套）
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    // 随包 JUnit 5 单测（离线：jar 预先放在 libs/test/，见 tools/fix_k.py）
+    testImplementation fileTree(dir: 'libs/test', include: ['*.jar'])
+
+    compileOnly 'io.github.llamalad7:mixinextras-common:0.5.3'
+    annotationProcessor 'io.github.llamalad7:mixinextras-common:0.5.3'
+
+    compileOnly 'org.apache.commons:commons-math3:3.6.1'
+
+    // 上游 dependencies.gradle 原样声明的纯 Java 声音库（jarJar 内嵌；编译期同样需要）
+    jarJar 'com.googlecode.soundlibs:jlayer:1.0.1.4'
+    jarJar 'com.googlecode.soundlibs:jorbis:0.0.17.4'
+    jarJar 'com.googlecode.soundlibs:vorbisspi:1.0.3.3'
+    jarJar 'com.googlecode.soundlibs:tritonus-share:0.3.7.4'
+    compileOnly 'com.googlecode.soundlibs:jlayer:1.0.1.4'
+    compileOnly 'com.googlecode.soundlibs:jorbis:0.0.17.4'
+    compileOnly 'com.googlecode.soundlibs:vorbisspi:1.0.3.3'
+    compileOnly 'com.googlecode.soundlibs:tritonus-share:0.3.7.4'
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    // 可复现构建：不写文件时间戳、固定条目顺序（否则同源码两次构建 sha256 不同）
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.named('test', Test).configure {
+    // Gradle 默认走 JUnit 4 引擎，会把 JUnit 5 测试静默跳过（报 0 个测试）；
+    // 显式启用 JUnit Platform，随包单测才真的执行。
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        exceptionFormat 'full'
+        showStandardStreams = false
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
-    options.compilerArgs << "-Xlint:-deprecation" << "-Xlint:-removal"
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xmaxerrs' << '3000'
+    options.compilerArgs << '-Xlint:-deprecation' << '-Xlint:-removal'
 }
 
-jar{
-    exclude "**/.cache"
-    exclude "**/SimplifiedToTraditional.properties"
-}
-
-java {
-    withSourcesJar()
-}
-
-// Maven publication
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        if (isRelease) {
-            maven {
-                name = "PtcrysReleases"
-                url = uri("https://maven.ptcrys.net/releases")
-                credentials {
-                    username = project.findProperty('ptcrysUsername')
-                    password = project.findProperty('ptcrysPassword')
-                }
-            }
-        } else {
-            maven {
-                name = "PtcrysSnapshots"
-                url = uri("https://maven.ptcrys.net/snapshots")
-                credentials {
-                    username = project.findProperty('ptcrysUsername')
-                    password = project.findProperty('ptcrysPassword')
-                }
-            }
-        }
-    }
+tasks.named('jar', Jar).configure {
+    manifest.attributes([
+            'MixinConfigs'          : 'blockoffensive.mixins.json',
+            'Specification-Title'   : 'BlockOffensive',
+            'Specification-Version' : project.version,
+            'Implementation-Title'  : 'blockoffensive',
+            'Implementation-Version': project.version,
+    ])
 }

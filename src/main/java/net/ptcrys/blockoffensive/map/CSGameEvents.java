@@ -1,5 +1,7 @@
 package net.ptcrys.blockoffensive.map;
 
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.ptcrys.blockoffensive.BlockOffensive;
 import net.ptcrys.blockoffensive.entity.CompositionC4Entity;
 import net.ptcrys.blockoffensive.event.CSGameMapEvent;
@@ -22,26 +24,25 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Mod.EventBusSubscriber(modid = BlockOffensive.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BlockOffensive.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class CSGameEvents {
 
     private static final Map<UUID, PendingMagazineReload> pendingMagazineReloads = new ConcurrentHashMap<>();
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide()) return;
-        if (!(event.player instanceof ServerPlayer player)) return;
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity().level().isClientSide()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
         PendingMagazineReload pending = pendingMagazineReloads.get(player.getUUID());
         if (pending == null) return;
         if (!player.getMainHandItem().equals(pending.stack()) && !player.getOffhandItem().equals(pending.stack())) {
@@ -227,7 +228,8 @@ public class CSGameEvents {
 
     @SubscribeEvent
     public static void onGunReload(FPSMGunReloadEvent event) {
-        if (event.isCanceled()) return;
+        // 1.21.1：移植版 FPSMGunReloadEvent extends Event 且未实现 ICancellableEvent，
+        // 没有 isCanceled()；上游该守卫失去对应物（见 PORT-NOTES.md）。
         if (event.getEntity().level().isClientSide()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
 

@@ -5,7 +5,7 @@ import net.ptcrys.blockoffensive.client.screen.CSGameShopScreen;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.ptcrys.fpsmatch.common.packet.register.PayloadContext;
 
 import java.util.function.Supplier;
 
@@ -34,7 +34,7 @@ public class ShopStatesS2CPacket {
                 buf.readInt());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(Supplier<PayloadContext> ctx) {
         ctx.get().enqueueWork(() -> {
             boolean wasOpen = CSClientData.canOpenShop;
             CSClientData.canOpenShop = this.canOpenShop;

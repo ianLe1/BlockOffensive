@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -35,7 +35,7 @@ public final class ShopItemArtwork {
             ResourceLocation hud = GunCompatManager.findProvider(stack).getGunHUDTexture(stack);
             if (hud != null) return hud.toString();
         }
-        ResourceLocation item = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        ResourceLocation item = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (item != null && item.getNamespace().equals("fpsmatch")) {
             return switch (item.getPath()) {
                 case "flash_bomb", "smoke_shell", "grenade", "ct_incendiary_grenade", "t_incendiary_grenade" -> "blockoffensive:textures/ui/cs/message/" + item.getPath() + ".png";
