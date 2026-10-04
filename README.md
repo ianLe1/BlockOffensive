@@ -1,3 +1,6 @@
+> **本分支是 BlockOffensive 的 1.21.1 NeoForge 移植分支（`1.21.1-neoforge-port`）**：把 BlockOffensive 从 1.20.1 Forge 移植到 1.21.1 NeoForge。
+> 改动与构建说明见 [PORT-README.md](PORT-README.md)。下面是上游原始 README。
+
 # BlockOffensive
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/SSOrangeCATY/BlockOffensive)
